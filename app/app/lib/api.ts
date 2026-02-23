@@ -3,7 +3,7 @@ import axios from "axios";
 const API_BASE_URL =
   typeof window !== "undefined" && window.location.hostname === "localhost"
     ? "http://localhost:8000/api"
-    : "/api";
+    : "https://backend.permisossubtel.cl/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
