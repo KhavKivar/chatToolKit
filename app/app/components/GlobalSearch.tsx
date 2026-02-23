@@ -247,7 +247,12 @@ export function GlobalSearch() {
             let best = 0,
               bestKw = "";
             for (const kw of keywords) {
-              const s = bestWordMatch(kw, c.message ?? "");
+              const msgMatch = bestWordMatch(kw, c.message ?? "");
+              const nameMatch = bestWordMatch(
+                kw,
+                c.commenter_display_name ?? "",
+              );
+              const s = Math.max(msgMatch, nameMatch);
               if (s > best) {
                 best = s;
                 bestKw = kw;
