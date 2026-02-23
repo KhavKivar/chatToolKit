@@ -1,0 +1,20 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+db.sqlite3
+*.pem
+
+# Next.js
+app/node_modules/
+app/.next/
+app/out/
+app/build/
+app/next-env.d.ts
+app/*.tsbuildinfo
+
+# Misc
+.DS_Store
+.vercel
