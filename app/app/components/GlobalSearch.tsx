@@ -232,6 +232,7 @@ export function GlobalSearch() {
           const data = await getComments({
             page,
             page_size: 500,
+            search_or: keywords.join(","),
             video__streamer: activeFilter || undefined,
           });
           const newBatch: Comment[] = data.results ?? [];

@@ -106,11 +106,25 @@ class VideoViewSet(viewsets.ModelViewSet):
 
 
 class CommentViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = Comment.objects.all()
     serializer_class = CommentSerializer
     filterset_fields = ['video_id', 'video__streamer']
     search_fields = ['message', 'commenter_display_name']
     ordering_fields = ['content_offset_seconds', 'created_at']
+
+    def get_queryset(self):
+        qs = Comment.objects.select_related('video').order_by('-video__created_at', 'content_offset_seconds')
+        search_or = self.request.query_params.get('search_or')
+        if search_or:
+            from django.db.models import Q
+            # Split keywords by comma
+            keywords = [k.strip() for k in search_or.split(',') if k.strip()]
+            if keywords:
+                q_objs = Q()
+                for kw in keywords:
+                    q_objs |= Q(message__icontains=kw) | Q(commenter_display_name__icontains=kw)
+                qs = qs.filter(q_objs)
+        return qs
+
 
     @action(detail=False, methods=['get'])
     def context(self, request):
