@@ -4,7 +4,7 @@ from .views import VideoViewSet, CommentViewSet, StreamerViewSet, ScrapeTaskView
 
 router = DefaultRouter()
 router.register(r'videos', VideoViewSet)
-router.register(r'comments', CommentViewSet)
+router.register(r'comments', CommentViewSet, basename='comment')
 router.register(r'streamers', StreamerViewSet)
 router.register(r'scrape-tasks', ScrapeTaskViewSet, basename='scrapetask')
 
