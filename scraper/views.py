@@ -231,7 +231,21 @@ class StreamerViewSet(viewsets.ModelViewSet):
 
 
 class ScrapeTaskViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ScrapeTask.objects.all().order_by('-created_at')
     serializer_class = ScrapeTaskSerializer
     filterset_fields = ['streamer_id', 'status']
     ordering_fields = ['created_at', 'updated_at']
+    pagination_class = None  # Return all tasks — frontend needs full list for queue UI
+
+    def get_queryset(self):
+        from django.db.models import Case, When, IntegerField
+        # Show InProgress first, then Pending, then Failed, then Completed
+        return ScrapeTask.objects.annotate(
+            status_order=Case(
+                When(status='InProgress', then=0),
+                When(status='Pending', then=1),
+                When(status='Failed', then=2),
+                When(status='Completed', then=3),
+                default=4,
+                output_field=IntegerField(),
+            )
+        ).order_by('status_order', '-updated_at')
