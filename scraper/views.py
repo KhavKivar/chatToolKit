@@ -147,26 +147,31 @@ class StreamerViewSet(viewsets.ModelViewSet):
         streamer = self.get_object()
         oauth = request.data.get('oauth') or os.getenv("TWITCH_OAUTH_TOKEN")
         
-        # NUCLEAR REFRESH: Delete everything for this streamer and restart
-        Video.objects.filter(streamer=streamer).delete()
-        ScrapeTask.objects.filter(streamer=streamer).delete()
-        
         service = TwitchScraperService(oauth_token=oauth)
         try:
             vods = service.fetch_streamer_vods(streamer.login, limit=50)
             queued_count = 0
             for vod in vods:
                 video_id = vod['id']
-                # Create a fresh task for every VOD found
-                ScrapeTask.objects.create(
-                    video_id=video_id,
-                    streamer=streamer,
-                    status='Pending'
-                )
-                queued_count += 1
+                
+                # Check for existing completed task
+                is_done = ScrapeTask.objects.filter(video_id=video_id, status='Completed').exists()
+                
+                # Also check if it's currently being worked on
+                has_active_task = ScrapeTask.objects.filter(video_id=video_id, status__in=['Pending', 'InProgress']).exists()
+                
+                if not is_done and not has_active_task:
+                    # If it failed before, we retry it by deleting the fail record
+                    ScrapeTask.objects.filter(video_id=video_id, status='Failed').delete()
+                    ScrapeTask.objects.create(
+                        video_id=video_id,
+                        streamer=streamer,
+                        status='Pending'
+                    )
+                    queued_count += 1
             
-            print(f"RESET COMPLETE for {streamer.display_name}: All old data deleted. Queued {queued_count} fresh tasks.")
-            return Response({"status": "Reset completed", "queued_vods": queued_count})
+            print(f"REFRESH COMPLETE for {streamer.display_name}: Queued {queued_count} new tasks.")
+            return Response({"status": "Refresh completed", "queued_vods": queued_count})
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
@@ -200,12 +205,8 @@ class StreamerViewSet(viewsets.ModelViewSet):
             for vod in vods:
                 video_id = vod['id']
                 
+                # Only consider it done if there's a Completed ScrapeTask
                 is_done = ScrapeTask.objects.filter(video_id=video_id, status='Completed').exists()
-                if not is_done:
-                    video_exists = Video.objects.filter(id=video_id).exists()
-                    has_comments = Comment.objects.filter(video_id=video_id).exists()
-                    if video_exists and has_comments:
-                        is_done = True
                 
                 has_active_task = ScrapeTask.objects.filter(video_id=video_id, status__in=['Pending', 'InProgress']).exists()
                 

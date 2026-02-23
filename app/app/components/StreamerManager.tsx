@@ -9,7 +9,9 @@ import {
   ServerCog,
   CheckCircle2,
   XCircle,
+  Search,
 } from "lucide-react";
+import Link from "next/link";
 import {
   getStreamers,
   addStreamer,
@@ -160,22 +162,34 @@ export function StreamerManager() {
                         @{s.login}
                       </p>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-primary"
-                      onClick={async () => {
-                        try {
-                          await refreshStreamerVods(s.id);
-                          fetchData();
-                        } catch (e) {
-                          console.error(e);
-                        }
-                      }}
-                      title="Scan for new VODs"
-                    >
-                      <RefreshCw size={16} />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Link href={`/search?streamer=${s.id}`}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-emerald-500"
+                          title="Search in this streamer's chats"
+                        >
+                          <Search size={16} />
+                        </Button>
+                      </Link>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-primary"
+                        onClick={async () => {
+                          try {
+                            await refreshStreamerVods(s.id);
+                            fetchData();
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
+                        title="Scan for new VODs"
+                      >
+                        <RefreshCw size={16} />
+                      </Button>
+                    </div>
                   </div>
                 ))
               )}

@@ -3,11 +3,11 @@
 import React from "react";
 import AddVideo from "./components/AddVideo";
 import { LibraryView } from "./components/LibraryView";
-import { GlobalSearch } from "./components/GlobalSearch";
 import { StreamerManager } from "./components/StreamerManager";
 import { ModeToggle } from "./components/mode-toggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LayoutDashboard, Search, Twitch } from "lucide-react";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -20,7 +20,16 @@ export default function Home() {
             </div>
             <h1 className="text-xl font-bold tracking-tight">ChatToolkit</h1>
           </div>
-          <ModeToggle />
+          <div className="flex items-center gap-6">
+            <Link
+              href="/search"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+            >
+              <Search size={16} />
+              Global Search
+            </Link>
+            <ModeToggle />
+          </div>
         </div>
       </nav>
 
@@ -32,17 +41,25 @@ export default function Home() {
         />
 
         <Tabs defaultValue="videos" className="w-full">
-          <TabsList className="grid w-full max-w-[600px] grid-cols-3 mb-8">
-            <TabsTrigger value="videos" className="flex items-center gap-2">
-              <LayoutDashboard size={16} /> Library
-            </TabsTrigger>
-            <TabsTrigger value="streamers" className="flex items-center gap-2">
-              <Twitch size={16} /> Streamers
-            </TabsTrigger>
-            <TabsTrigger value="search" className="flex items-center gap-2">
-              <Search size={16} /> Global Search
-            </TabsTrigger>
-          </TabsList>
+          <div className="flex items-center gap-4 mb-8">
+            <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+              <TabsTrigger value="videos" className="flex items-center gap-2">
+                <LayoutDashboard size={16} /> Library
+              </TabsTrigger>
+              <TabsTrigger
+                value="streamers"
+                className="flex items-center gap-2"
+              >
+                <Twitch size={16} /> Streamers
+              </TabsTrigger>
+            </TabsList>
+            <Link href="/search">
+              <button className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border border-primary/20 bg-primary/5 text-primary hover:bg-primary/10 hover:border-primary/40 transition-all">
+                <Search size={16} />
+                Global Search
+              </button>
+            </Link>
+          </div>
 
           <TabsContent value="videos" className="space-y-4">
             <LibraryView />
@@ -50,10 +67,6 @@ export default function Home() {
 
           <TabsContent value="streamers">
             <StreamerManager />
-          </TabsContent>
-
-          <TabsContent value="search">
-            <GlobalSearch />
           </TabsContent>
         </Tabs>
       </main>
