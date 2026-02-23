@@ -45,7 +45,14 @@ const loadState = (): SearchState | undefined => {
   try {
     const serializedState = localStorage.getItem(STORAGE_KEY);
     if (serializedState === null) return undefined;
-    return JSON.parse(serializedState);
+    const parsed = JSON.parse(serializedState) as SearchState;
+    // CRITICAL FIX: Reset volatile network states that shouldn't persist across reloads
+    return {
+      ...parsed,
+      loading: false,
+      isScanningMore: false,
+      searchProgress: "",
+    };
   } catch {
     return undefined;
   }
