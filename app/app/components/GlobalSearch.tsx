@@ -218,8 +218,8 @@ export function GlobalSearch() {
         const allMatches: ScoredComment[] = [];
         let page = startPage;
         let hasMoreOnServer = true;
-        const BATCH_SIZE = 10;
-        const ABSOLUTE_MAX_PAGES = 100;
+        const BATCH_SIZE = 50;
+        const ABSOLUTE_MAX_PAGES = 1000;
 
         while (hasMoreOnServer && page <= startPage + ABSOLUTE_MAX_PAGES - 1) {
           const data = await getComments({
