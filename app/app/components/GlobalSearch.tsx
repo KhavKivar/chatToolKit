@@ -11,6 +11,7 @@ import {
   X,
   MessageSquare,
 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { getComments, getStreamers, getCommentContext } from "../lib/api";
 import {
   Dialog,
@@ -144,6 +145,7 @@ export function GlobalSearch() {
     isScanningMore,
   } = useSelector((state: RootState) => state.search);
 
+  const searchParams = useSearchParams();
   const [streamers, setStreamers] = React.useState<Streamer[]>([]);
 
   const [contextModalOpen, setContextModalOpen] = React.useState(false);
@@ -192,8 +194,13 @@ export function GlobalSearch() {
   const removeKeyword = (kw: string) =>
     saveKeywords(keywords.filter((k) => k !== kw));
 
-  const handleSearch = React.useCallback(
-    async (isLoadMore = false) => {
+  // searchWithFilter lets us run a fresh search with an explicit streamer value
+  // without relying on the Redux state (which might not have updated yet).
+  const searchWithFilter = React.useCallback(
+    async (isLoadMore = false, filterOverride?: string) => {
+      const activeFilter =
+        filterOverride !== undefined ? filterOverride : streamerFilter;
+
       if (keywords.length === 0) {
         dispatch(setLoading(false));
         dispatch(setIsScanningMore(false));
@@ -225,7 +232,7 @@ export function GlobalSearch() {
           const data = await getComments({
             page,
             page_size: 500,
-            video__streamer: streamerFilter || undefined,
+            video__streamer: activeFilter || undefined,
           });
           const newBatch: Comment[] = data.results ?? [];
           hasMoreOnServer = !!data.next;
@@ -334,6 +341,12 @@ export function GlobalSearch() {
     [keywords, streamerFilter, dispatch, lastScannedPage, groups],
   );
 
+  // Convenience alias — keeps existing call-sites working
+  const handleSearch = React.useCallback(
+    (isLoadMore = false) => searchWithFilter(isLoadMore),
+    [searchWithFilter],
+  );
+
   // Trigger search on mount if keywords are present (once)
   const hasTriggeredInitialSearch = React.useRef(false);
   React.useEffect(() => {
@@ -343,21 +356,21 @@ export function GlobalSearch() {
       !hasTriggeredInitialSearch.current
     ) {
       hasTriggeredInitialSearch.current = true;
-      handleSearch();
+      searchWithFilter();
     }
-  }, [keywords, searched, handleSearch]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   React.useEffect(() => {
     const init = async () => {
-      const params = new URLSearchParams(window.location.search);
-      const urlKw = params.get("keywords");
+      const urlKw = searchParams.get("keywords") || searchParams.get("keyword");
       let initialKeywords: string[] = [];
       if (urlKw) {
         initialKeywords = urlKw.split(",").filter(Boolean);
         dispatch(setKeywords(initialKeywords));
       }
 
-      const urlStreamer = params.get("streamer");
+      const urlStreamer = searchParams.get("streamer");
       if (urlStreamer) {
         dispatch(setStreamerFilter(urlStreamer));
       }
@@ -367,7 +380,7 @@ export function GlobalSearch() {
       });
     };
     init();
-  }, [dispatch]);
+  }, [dispatch, searchParams]);
 
   // Intersection Observer for incremental scanning
   const searchObserverTarget = React.useRef(null);
@@ -395,11 +408,11 @@ export function GlobalSearch() {
   }, [canScanMore, loading, isScanningMore, searched, handleSearch]);
 
   React.useEffect(() => {
-    // We only want to sync to URL if we've initialized to avoid wiping it out on first render
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(searchParams.toString());
 
     if (keywords.length > 0) {
       params.set("keywords", keywords.join(","));
+      params.delete("keyword"); // Clean up singular keyword if we have plural
     } else {
       params.delete("keywords");
     }
@@ -412,7 +425,7 @@ export function GlobalSearch() {
 
     const newUrl = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
     window.history.replaceState(null, "", newUrl);
-  }, [keywords, streamerFilter]);
+  }, [keywords, streamerFilter, searchParams]);
 
   return (
     <div className="space-y-6">
@@ -449,7 +462,14 @@ export function GlobalSearch() {
             <select
               className="flex h-10 w-full md:w-[250px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               value={streamerFilter}
-              onChange={(e) => dispatch(setStreamerFilter(e.target.value))}
+              onChange={(e) => {
+                const newFilter = e.target.value;
+                dispatch(setStreamerFilter(newFilter));
+                // Pass the new filter value directly to avoid stale-closure bug
+                if (keywords.length > 0) {
+                  searchWithFilter(false, newFilter);
+                }
+              }}
             >
               <option value="">Filter by: All Streamers</option>
               {streamers.map((s) => (
@@ -485,7 +505,7 @@ export function GlobalSearch() {
           ) : null}
 
           <Button
-            className="w-full"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
             onClick={() => handleSearch()}
             disabled={loading || keywords.length === 0}
           >
@@ -497,8 +517,10 @@ export function GlobalSearch() {
             ) : (
               <>
                 <Search size={16} className="mr-2" />
-                Search in All Chats ({keywords.length} keyword
-                {keywords.length !== 1 ? "s" : ""})
+                {streamerFilter
+                  ? `Search in @${streamers.find((s) => s.id === streamerFilter)?.display_name || "Streamer"}'s Chats`
+                  : `Search in All Chats`}{" "}
+                ({keywords.length} keyword{keywords.length !== 1 ? "s" : ""})
               </>
             )}
           </Button>
@@ -510,51 +532,153 @@ export function GlobalSearch() {
         <div className="space-y-4">
           {/* Summary bar */}
           {searched && (groups.length > 0 || (!loading && !isScanningMore)) && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-              <span>
+            <div className="flex items-center justify-between text-sm px-1">
+              <div className="flex items-center gap-3">
                 {loading || isScanningMore ? (
-                  <span className="animate-pulse">
-                    Searching through library...
-                  </span>
+                  <div className="flex items-center gap-2 text-primary">
+                    <div className="relative">
+                      <Loader2 size={16} className="animate-spin" />
+                    </div>
+                    <span className="font-medium animate-pulse">
+                      Scanning through library...
+                    </span>
+                  </div>
                 ) : (
-                  <>
-                    Found{" "}
-                    <strong className="text-foreground">{totalMatches}</strong>{" "}
-                    message{totalMatches !== 1 ? "s" : ""} across{" "}
-                    <strong className="text-foreground">{groups.length}</strong>{" "}
-                    video{groups.length !== 1 ? "s" : ""}
-                  </>
+                  <div className="flex items-center gap-4 text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                      <MessageSquare size={14} className="text-primary" />
+                      <strong className="text-foreground">
+                        {totalMatches}
+                      </strong>
+                      <span>match{totalMatches !== 1 ? "es" : ""}</span>
+                    </div>
+                    <span className="text-border">|</span>
+                    <div className="flex items-center gap-1.5">
+                      <Twitch size={14} className="text-purple-500" />
+                      <strong className="text-foreground">
+                        {groups.length}
+                      </strong>
+                      <span>video{groups.length !== 1 ? "s" : ""}</span>
+                    </div>
+                    {streamerFilter && (
+                      <>
+                        <span className="text-border">|</span>
+                        <Badge
+                          variant="secondary"
+                          className="text-[10px] gap-1"
+                        >
+                          Filtered:{" "}
+                          {streamers.find((s) => s.id === streamerFilter)
+                            ?.display_name || "Streamer"}
+                          <button
+                            onClick={() => {
+                              dispatch(setStreamerFilter(""));
+                              searchWithFilter(false, "");
+                            }}
+                            className="ml-1 hover:text-destructive"
+                          >
+                            <X size={10} />
+                          </button>
+                        </Badge>
+                      </>
+                    )}
+                  </div>
                 )}
-              </span>
+              </div>
             </div>
           )}
 
-          {loading && groups.length === 0 ? (
-            <Card>
-              <CardContent className="py-20 flex flex-col items-center gap-3 text-muted-foreground">
-                <Loader2 size={32} className="animate-spin text-primary" />
-                <p className="text-sm font-medium">{searchProgress}</p>
-                <p className="text-xs opacity-50">
-                  This may take a few seconds depending on library size.
-                </p>
+          {/* Loading Progress */}
+          {loading && (
+            <div className="relative overflow-hidden rounded-xl border bg-card">
+              {/* Animated gradient top bar */}
+              <div className="h-1 w-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary/0 via-primary to-primary/0 animate-shimmer"
+                  style={{
+                    width: "200%",
+                    animation: "shimmer 1.5s infinite linear",
+                  }}
+                />
+              </div>
+              <div className="p-8 flex flex-col items-center gap-4">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping" />
+                  <div className="relative bg-primary/10 p-4 rounded-full">
+                    <Search size={28} className="text-primary" />
+                  </div>
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="font-semibold text-foreground">
+                    {searchProgress || "Initializing search..."}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Fuzzy matching with ≥{Math.round(THRESHOLD * 100)}%
+                    similarity threshold
+                  </p>
+                </div>
+              </div>
+
+              {/* Skeleton cards preview */}
+              {groups.length === 0 && (
+                <div className="px-4 pb-4 space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg border border-border/50 p-4 animate-pulse"
+                      style={{ animationDelay: `${i * 150}ms` }}
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-8 h-8 rounded-lg bg-muted" />
+                        <div className="flex-1 space-y-1.5">
+                          <div className="h-3.5 bg-muted rounded w-2/3" />
+                          <div className="h-2.5 bg-muted rounded w-1/3" />
+                        </div>
+                        <div className="h-5 w-16 bg-muted rounded-full" />
+                      </div>
+                      <div className="space-y-2 pl-11">
+                        <div className="h-2.5 bg-muted/60 rounded w-full" />
+                        <div className="h-2.5 bg-muted/40 rounded w-4/5" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* No results */}
+          {groups.length === 0 && searched && !loading && (
+            <Card className="border-dashed">
+              <CardContent className="py-16 flex flex-col items-center gap-4 text-muted-foreground">
+                <div className="bg-muted/50 p-4 rounded-full">
+                  <MessageSquare size={32} className="opacity-30" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="font-medium text-foreground/70">
+                    No matches found
+                  </p>
+                  <p className="text-sm">
+                    No messages matched with ≥{Math.round(THRESHOLD * 100)}%
+                    similarity. Try different keywords or remove the streamer
+                    filter.
+                  </p>
+                </div>
               </CardContent>
             </Card>
-          ) : groups.length === 0 && searched && !loading ? (
-            <Card>
-              <CardContent className="py-20 flex flex-col items-center gap-3 text-muted-foreground">
-                <MessageSquare size={40} className="opacity-20" />
-                <p className="text-sm italic">
-                  No matches found with ≥{Math.round(THRESHOLD * 100)}%
-                  similarity.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            groups.map((group) => {
-              return (
-                <Card key={group.video_id} className="overflow-hidden">
+          )}
+
+          {/* Results cards */}
+          {groups.length > 0 && (
+            <div className="space-y-4">
+              {groups.map((group, groupIdx) => (
+                <Card
+                  key={group.video_id}
+                  className="overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 border-border/60 hover:border-border transition-colors"
+                  style={{ animationDelay: `${groupIdx * 50}ms` }}
+                >
                   {/* Video header */}
-                  <CardHeader className="py-4 bg-muted/20">
+                  <CardHeader className="py-4 bg-gradient-to-r from-muted/30 to-transparent">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="bg-purple-600/10 p-2 rounded-lg shrink-0">
@@ -584,7 +708,7 @@ export function GlobalSearch() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <Badge>
+                        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none">
                           {group.comments.length} match
                           {group.comments.length !== 1 ? "es" : ""}
                         </Badge>
@@ -593,7 +717,7 @@ export function GlobalSearch() {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="text-[11px] text-purple-500 hover:text-purple-400 flex items-center gap-1 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5"
+                          className="text-[11px] text-purple-500 hover:text-purple-400 flex items-center gap-1 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
                         >
                           VOD <ExternalLink size={10} />
                         </a>
@@ -601,7 +725,7 @@ export function GlobalSearch() {
                     </div>
                   </CardHeader>
 
-                  {/* Comments list (Always Open) */}
+                  {/* Comments list */}
                   <CardContent className="pt-0 pb-4 px-4">
                     <div className="space-y-3">
                       {group.comments.map((c: ScoredComment, idx: number) => (
@@ -660,25 +784,29 @@ export function GlobalSearch() {
                     </div>
                   </CardContent>
                 </Card>
-              );
-            })
+              ))}
+            </div>
           )}
 
           {/* Incremental Scan Sentinel */}
           <div
             ref={searchObserverTarget}
-            className="py-16 flex flex-col items-center justify-center gap-4"
+            className="py-12 flex flex-col items-center justify-center gap-4"
           >
             {isScanningMore && (
-              <div className="flex flex-col items-center gap-3 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card border border-border/50 px-8 py-4 rounded-2xl shadow-xl">
-                <Loader2 size={24} className="animate-spin text-primary" />
-                <div className="text-center">
-                  <p className="text-sm font-black uppercase tracking-widest text-foreground">
-                    Scanning more VODs...
-                  </p>
-                  <p className="text-[11px] font-medium opacity-60 mt-1 italic">
-                    {searchProgress}
-                  </p>
+              <div className="flex flex-col items-center gap-3 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card border border-border/50 px-8 py-5 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-3">
+                  <Loader2 size={20} className="animate-spin text-primary" />
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">
+                      Loading more results...
+                    </p>
+                    {searchProgress && (
+                      <p className="text-[11px] opacity-60 mt-0.5">
+                        {searchProgress}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}

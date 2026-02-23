@@ -223,11 +223,15 @@ class TwitchScraperService:
         print(f"Scraping video {video_id}...")
         self.refresh_integrity()
         
-        offset = 0
+        # Check for existing comments to resume from
+        from .models import Comment
+        last_comment = Comment.objects.filter(video_id=video_id).order_by('-content_offset_seconds').first()
+        offset = last_comment.content_offset_seconds if last_comment else 0
+        
         page = 0
         video_obj = None
         seen_ids = set()
-        total_comments = 0
+        total_comments = Comment.objects.filter(video_id=video_id).count()
         length_seconds = None
 
         while True:

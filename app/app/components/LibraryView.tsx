@@ -1,7 +1,15 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowLeft, Play, User, Calendar, RefreshCcw } from "lucide-react";
+import {
+  ArrowLeft,
+  Play,
+  User,
+  Calendar,
+  RefreshCcw,
+  Search,
+} from "lucide-react";
+import Link from "next/link";
 import { refreshStreamerVods, getStreamers, getVideos } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -142,19 +150,32 @@ export function LibraryView() {
             <ArrowLeft size={16} /> Back to Library
           </button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefreshVods}
-            disabled={isScanning}
-            className="flex items-center gap-2 border-primary/30 hover:border-primary/60 hover:bg-primary/5 text-primary"
-          >
-            <RefreshCcw
-              size={14}
-              className={isScanning ? "animate-spin" : ""}
-            />
-            {isScanning ? "Scanning..." : "Scan for New VODs"}
-          </Button>
+          <div className="flex gap-3">
+            <Link href={`/search?streamer=${selectedStreamer.id}`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-2 border-emerald-500/30 hover:border-emerald-500/60 hover:bg-emerald-500/5 text-emerald-500"
+              >
+                <Search size={14} />
+                Search in Chats
+              </Button>
+            </Link>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshVods}
+              disabled={isScanning}
+              className="flex items-center gap-2 border-primary/30 hover:border-primary/60 hover:bg-primary/5 text-primary"
+            >
+              <RefreshCcw
+                size={14}
+                className={isScanning ? "animate-spin" : ""}
+              />
+              {isScanning ? "Scanning..." : "Scan for New VODs"}
+            </Button>
+          </div>
         </div>
 
         <div className="flex items-center gap-5 p-6 bg-gradient-to-r from-primary/10 to-transparent rounded-2xl border border-primary/10">
@@ -273,13 +294,25 @@ export function LibraryView() {
             Select a streamer to view their downloaded VODs.
           </p>
         </div>
-        <button
-          onClick={loadData}
-          className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-          title="Refresh"
-        >
-          <RefreshCcw size={18} />
-        </button>
+        <div className="flex items-center gap-3">
+          <Link href="/search">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 border-primary/20 hover:bg-primary/5"
+            >
+              <Search size={16} />
+              <span className="hidden sm:inline">Search Library</span>
+            </Button>
+          </Link>
+          <button
+            onClick={loadData}
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+            title="Refresh"
+          >
+            <RefreshCcw size={18} />
+          </button>
+        </div>
       </div>
 
       {sortedStreamers.length === 0 ? (
@@ -313,6 +346,20 @@ export function LibraryView() {
                       {vCount}
                     </div>
                   )}
+                  <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-110">
+                    <Link
+                      href={`/search?streamer=${s.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        className="h-8 w-8 rounded-full shadow-lg border-2 border-background bg-emerald-500 text-white hover:bg-emerald-600"
+                      >
+                        <Search size={14} />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
                 <div>
                   <h3
