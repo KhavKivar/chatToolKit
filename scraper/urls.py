@@ -6,7 +6,7 @@ router = DefaultRouter()
 router.register(r'videos', VideoViewSet)
 router.register(r'comments', CommentViewSet)
 router.register(r'streamers', StreamerViewSet)
-router.register(r'scrape-tasks', ScrapeTaskViewSet)
+router.register(r'scrape-tasks', ScrapeTaskViewSet, basename='scrapetask')
 
 urlpatterns = [
     path('', include(router.urls)),
