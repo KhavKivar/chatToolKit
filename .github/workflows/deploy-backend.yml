@@ -12,10 +12,10 @@ jobs:
         uses: appleboy/ssh-action@master
         with:
           host: 44.200.127.170
-          username: kvir
+          username: ubuntu
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/kvir/PersonalProjects/chat-download
+            cd /home/ubuntu/chat-download
             git pull origin main
             ./venv/bin/pip install -r requirements.txt
             ./venv/bin/python manage.py migrate

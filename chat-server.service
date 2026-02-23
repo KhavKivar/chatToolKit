@@ -3,14 +3,14 @@ Description=Chat Toolkit Gunicorn Server
 After=network.target
 
 [Service]
-User=kvir
-Group=kvir
-WorkingDirectory=/home/kvir/PersonalProjects/chat-download
-ExecStart=/home/kvir/PersonalProjects/chat-download/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 core.wsgi:application
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/chat-download
+ExecStart=/home/ubuntu/chat-download/venv/bin/gunicorn --workers 3 --bind 0.0.0.0:8000 core.wsgi:application
 Restart=always
 RestartSec=5
-StandardOutput=append:/home/kvir/PersonalProjects/chat-download/server.log
-StandardError=append:/home/kvir/PersonalProjects/chat-download/server_error.log
+StandardOutput=append:/home/ubuntu/chat-download/server.log
+StandardError=append:/home/ubuntu/chat-download/server_error.log
 
 [Install]
 WantedBy=multi-user.target

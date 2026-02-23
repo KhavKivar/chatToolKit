@@ -4,22 +4,22 @@ After=network.target
 
 [Service]
 # Asegúrate de que este usuario es correcto (el tuyo de linux)
-User=kvir
-Group=kvir
+User=ubuntu
+Group=ubuntu
 
 # Directorio principal del proyecto
-WorkingDirectory=/home/kvir/PersonalProjects/chat-download
+WorkingDirectory=/home/ubuntu/chat-download
 
 # Ejecuta el worker usando el entorno virtual de Python
-ExecStart=/home/kvir/PersonalProjects/chat-download/venv/bin/python manage.py run_scraper_worker
+ExecStart=/home/ubuntu/chat-download/venv/bin/python manage.py run_scraper_worker
 
 # Reinicia automáticamente si el worker falla
 Restart=always
 RestartSec=5
 
 # Logs
-StandardOutput=append:/home/kvir/PersonalProjects/chat-download/worker.log
-StandardError=append:/home/kvir/PersonalProjects/chat-download/worker_error.log
+StandardOutput=append:/home/ubuntu/chat-download/worker.log
+StandardError=append:/home/ubuntu/chat-download/worker_error.log
 
 [Install]
 WantedBy=multi-user.target
