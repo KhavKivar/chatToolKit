@@ -1,0 +1,23 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: 44.200.127.170
+          username: kvir
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/kvir/PersonalProjects/chat-download
+            git pull origin main
+            ./venv/bin/pip install -r requirements.txt
+            ./venv/bin/python manage.py migrate
+            sudo systemctl restart chat-server
+            sudo systemctl restart chat-worker
