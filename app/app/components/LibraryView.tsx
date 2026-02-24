@@ -77,6 +77,19 @@ export function LibraryView() {
     }
   }, [selectedStreamer]);
 
+  // Poll for VODs while viewing a streamer's library to see new results from background scanner
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (selectedStreamer && !selectedVideo) {
+      interval = setInterval(() => {
+        loadStreamerVideos(selectedStreamer.id, selectedStreamer.login);
+      }, 5000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [selectedStreamer, selectedVideo]);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -128,7 +141,7 @@ export function LibraryView() {
       try {
         const res = await refreshStreamerVods(selectedStreamer.id);
         alert(
-          `RESET COMPLETE: All old videos and comments for ${selectedStreamer.display_name} have been DELETED. ${res.queued_vods || 0} fresh tasks have been queued.`,
+          `Scan complete: ${res.queued_vods || 0} VODs have been queued for processing. They will appear here once they are scanned.`,
         );
         loadData(); // Update counts
         loadStreamerVideos(selectedStreamer.id, selectedStreamer.login);

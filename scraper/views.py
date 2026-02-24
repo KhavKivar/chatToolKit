@@ -8,6 +8,7 @@ from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, BaseRen
 from .models import Video, Comment, Streamer, ScrapeTask
 from .serializers import VideoSerializer, CommentSerializer, StreamerSerializer, ScrapeTaskSerializer
 from .services import TwitchScraperService
+from datetime import datetime, timezone, timedelta
 
 
 class SSERenderer(BaseRenderer):
@@ -174,9 +175,17 @@ class StreamerViewSet(viewsets.ModelViewSet):
                 # Also check if it's currently being worked on
                 has_active_task = ScrapeTask.objects.filter(video_id=video_id, status__in=['Pending', 'InProgress']).exists()
                 
-                if not is_done and not has_active_task:
-                    # If it failed before, we retry it by deleting the fail record
-                    ScrapeTask.objects.filter(video_id=video_id, status='Failed').delete()
+                should_requeue = False
+                if is_done and not has_active_task:
+                    # If it's done, but VOD is recent (less than 24h old), re-queue to capture more comments
+                    # as it might have been live when first scraped.
+                    created_at = datetime.fromisoformat(vod['createdAt'].replace('Z', '+00:00'))
+                    if datetime.now(timezone.utc) - created_at < timedelta(hours=24):
+                        should_requeue = True
+
+                if (not is_done or should_requeue) and not has_active_task:
+                    # If it failed or we want to requeue, we reset the task (delete any non-active task)
+                    ScrapeTask.objects.filter(video_id=video_id).exclude(status__in=['Pending', 'InProgress']).delete()
                     ScrapeTask.objects.create(
                         video_id=video_id,
                         streamer=streamer,
@@ -224,8 +233,14 @@ class StreamerViewSet(viewsets.ModelViewSet):
                 
                 has_active_task = ScrapeTask.objects.filter(video_id=video_id, status__in=['Pending', 'InProgress']).exists()
                 
-                if not is_done and not has_active_task:
-                    ScrapeTask.objects.filter(video_id=video_id, status='Failed').delete()
+                should_requeue = False
+                if is_done and not has_active_task:
+                    created_at = datetime.fromisoformat(vod['createdAt'].replace('Z', '+00:00'))
+                    if datetime.now(timezone.utc) - created_at < timedelta(hours=24):
+                        should_requeue = True
+
+                if (not is_done or should_requeue) and not has_active_task:
+                    ScrapeTask.objects.filter(video_id=video_id).exclude(status__in=['Pending', 'InProgress']).delete()
                     ScrapeTask.objects.create(
                         video_id=video_id,
                         streamer=streamer,
