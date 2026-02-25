@@ -420,20 +420,6 @@ export function GlobalSearch() {
     [searchWithFilter],
   );
 
-  // Trigger search on mount if keywords are present (once)
-  const hasTriggeredInitialSearch = React.useRef(false);
-  React.useEffect(() => {
-    if (
-      !searched &&
-      keywords.length > 0 &&
-      !hasTriggeredInitialSearch.current
-    ) {
-      hasTriggeredInitialSearch.current = true;
-      searchWithFilter();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   React.useEffect(() => {
     const init = async () => {
       const urlKw = searchParams.get("keywords") || searchParams.get("keyword");
@@ -565,10 +551,6 @@ export function GlobalSearch() {
               onChange={(e) => {
                 const newFilter = e.target.value;
                 dispatch(setStreamerFilter(newFilter));
-                // Pass the new filter value directly to avoid stale-closure bug
-                if (keywords.length > 0) {
-                  searchWithFilter(false, newFilter);
-                }
               }}
             >
               <option value="">Filter by: All Streamers</option>
@@ -587,11 +569,6 @@ export function GlobalSearch() {
                 onChange={(e) => {
                   const val = e.target.checked;
                   dispatch(setToxicOnly(val));
-                  if (val || keywords.length > 0) {
-                    // Trigger fresh search if turning ON or if we have keywords
-                    searchInProgress.current = false;
-                    searchWithFilter(false);
-                  }
                 }}
                 className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
               />

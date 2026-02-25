@@ -8,6 +8,12 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS('Starting Scraper Background Worker...'))
+        
+        # Cleanup: Reset any tasks that were interrupted (stuck in InProgress)
+        stuck_tasks = ScrapeTask.objects.filter(status='InProgress').update(status='Pending')
+        if stuck_tasks > 0:
+            self.stdout.write(self.style.NOTICE(f"Cleaned up {stuck_tasks} stuck 'InProgress' tasks."))
+
         service = TwitchScraperService()
 
         while True:
