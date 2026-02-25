@@ -633,7 +633,7 @@ export function GlobalSearch() {
                     <Badge
                       key={u}
                       variant="destructive"
-                      className="gap-1.5 px-3 py-1 text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
+                      className="gap-1.5 dark:text-white px-3 py-1 text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
                     >
                       {u}
                       <button
