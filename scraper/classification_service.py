@@ -45,7 +45,15 @@ class ToxicityClassifierService:
                         # Or 'LABEL_0' might be offensive. For cardiffnlp: LABEL_0 is neutral, LABEL_1 is positive, etc?
                         # Actually for cardiffnlp/twitter-roberta-base-offensive,LABEL_1 is offensive
                         label = res['label'].lower()
-                        obj.is_toxic = 'label_1' in label or 'offensive' in label
+                        # cardiffnlp uses 'non-offensive' and 'offensive'. 
+                        # 'offensive' in 'non-offensive' is true, so we must be specific.
+                        if 'label_1' in label:
+                            obj.is_toxic = True
+                        elif label == 'offensive':
+                            obj.is_toxic = True
+                        else:
+                            obj.is_toxic = False
+                        
                         obj.save(update_fields=['is_toxic', 'toxicity_score'])
                 
                 processed += len(batch)
