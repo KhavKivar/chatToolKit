@@ -42,3 +42,11 @@ class ScrapeTaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = ScrapeTask
         fields = '__all__'
+
+class ClassificationTaskSerializer(serializers.ModelSerializer):
+    video_title = serializers.CharField(source='video.title', read_only=True)
+    video_streamer = serializers.CharField(source='video.streamer_display_name', read_only=True)
+
+    class Meta:
+        model = ClassificationTask
+        fields = '__all__'

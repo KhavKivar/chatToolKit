@@ -10,7 +10,7 @@ import shutil
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional
 from django.conf import settings
-from .models import Video, Comment, Streamer
+from .models import Video, Comment, Streamer, ClassificationTask
 from datetime import datetime
 
 # --- CONFIGURATION ---
@@ -354,6 +354,17 @@ class TwitchScraperService:
                 "done": True,
                 "video_title": video_obj.title if video_obj else "",
             })
+
+        # Automatically queue this video for classification if a completed task doesn't already exist
+        is_done = ClassificationTask.objects.filter(video=video_obj, status='Completed').exists()
+        has_active = ClassificationTask.objects.filter(video=video_obj, status__in=['Pending', 'InProgress']).exists()
+        if not is_done and not has_active:
+            # Delete any failed ones and create a fresh one
+            ClassificationTask.objects.filter(video=video_obj).exclude(status__in=['Pending', 'InProgress']).delete()
+            ClassificationTask.objects.create(
+                video=video_obj,
+                status='Pending'
+            )
 
     def cleanup(self):
         if os.path.exists(self.cookie_path):

@@ -54,6 +54,27 @@ class Comment(models.Model):
     content_offset_seconds = models.IntegerField(null=True, blank=True)
     message = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(null=True, blank=True)
+    is_toxic = models.BooleanField(default=False)
+    toxicity_score = models.FloatField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.commenter_display_name}: {self.message[:50]}"
+
+class ClassificationTask(models.Model):
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('InProgress', 'In Progress'),
+        ('Completed', 'Completed'),
+        ('Failed', 'Failed'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name='classification_tasks')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Pending')
+    progress_percent = models.IntegerField(default=0)
+    error_message = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Classification {self.video_id} - {self.status}"

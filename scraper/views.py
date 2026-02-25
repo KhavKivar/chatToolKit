@@ -5,8 +5,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, BaseRenderer
-from .models import Video, Comment, Streamer, ScrapeTask
-from .serializers import VideoSerializer, CommentSerializer, StreamerSerializer, ScrapeTaskSerializer
+from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask
+from .serializers import VideoSerializer, CommentSerializer, StreamerSerializer, ScrapeTaskSerializer, ClassificationTaskSerializer
 from .services import TwitchScraperService
 from datetime import datetime, timezone, timedelta
 
@@ -108,7 +108,7 @@ class VideoViewSet(viewsets.ModelViewSet):
 
 class CommentViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CommentSerializer
-    filterset_fields = ['video_id', 'video__streamer']
+    filterset_fields = ['video_id', 'video__streamer', 'is_toxic']
     search_fields = ['message', 'commenter_display_name']
     ordering_fields = ['content_offset_seconds', 'created_at']
 
@@ -286,3 +286,23 @@ class ScrapeTaskViewSet(viewsets.ReadOnlyModelViewSet):
                 output_field=IntegerField(),
             )
         ).order_by('status_order', '-updated_at')
+
+class ClassificationTaskViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = ClassificationTaskSerializer
+    filterset_fields = ['video_id', 'status']
+    ordering_fields = ['created_at', 'updated_at']
+    pagination_class = None
+
+    def get_queryset(self):
+        from django.db.models import Case, When, IntegerField
+        return ClassificationTask.objects.annotate(
+            status_order=Case(
+                When(status='InProgress', then=0),
+                When(status='Pending', then=1),
+                When(status='Failed', then=2),
+                When(status='Completed', then=3),
+                default=4,
+                output_field=IntegerField(),
+            )
+        ).order_by('status_order', '-updated_at')
+
