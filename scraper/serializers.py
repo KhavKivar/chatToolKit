@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Video, Comment, Streamer, ScrapeTask
+from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask
 
 class VideoSerializer(serializers.ModelSerializer):
     class Meta:

@@ -531,7 +531,7 @@ export function GlobalSearch() {
 
           <div className="flex gap-2">
             <Input
-              placeholder='Exclude users (e.g. "guldasan") and press Enter...'
+              placeholder='Exclude users (e.g. "missyl0l") and press Enter...'
               value={excludedUsersInput}
               onChange={(e) => setExcludedInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addExcludedUser()}
