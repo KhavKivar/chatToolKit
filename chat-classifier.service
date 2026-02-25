@@ -1,0 +1,17 @@
+[Unit]
+Description=Chat Download Classifier Worker
+After=network.target postgresql.service
+
+[Service]
+User=ubuntu
+WorkingDirectory=/home/ubuntu/chat-download
+ExecStart=/home/ubuntu/chat-download/venv/bin/python manage.py run_classifier_worker
+
+# Stream logs unbuffered
+Environment=PYTHONUNBUFFERED=1
+
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

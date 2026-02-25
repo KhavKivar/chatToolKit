@@ -81,6 +81,11 @@ export const getScrapeTasks = async () => {
   return response.data;
 };
 
+export const getClassificationTasks = async () => {
+  const response = await api.get("/classification-tasks/");
+  return response.data;
+};
+
 export const startScrape = async (videoId: string, oauth?: string) => {
   const response = await api.post(`/videos/scrape/${videoId}/`, { oauth });
   return response.data;
