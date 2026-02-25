@@ -27,6 +27,8 @@ interface VideoGroup {
 interface SearchState {
   input: string;
   keywords: string[];
+  excludedUsersInput: string;
+  excludedUsers: string[];
   groups: VideoGroup[];
   loading: boolean;
   searched: boolean;
@@ -52,6 +54,8 @@ const loadState = (): SearchState | undefined => {
       loading: false,
       isScanningMore: false,
       searchProgress: "",
+      excludedUsersInput: parsed.excludedUsersInput || "", // Added default to handle old saved states
+      excludedUsers: parsed.excludedUsers || [],
     };
   } catch {
     return undefined;
@@ -61,6 +65,8 @@ const loadState = (): SearchState | undefined => {
 const initialState: SearchState = loadState() || {
   input: "",
   keywords: [],
+  excludedUsersInput: "",
+  excludedUsers: [],
   groups: [],
   loading: false,
   searched: false,
@@ -81,6 +87,13 @@ const searchSlice = createSlice({
     },
     setKeywords: (state, action: PayloadAction<string[]>) => {
       state.keywords = action.payload;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    },
+    setExcludedUsersInput: (state, action: PayloadAction<string>) => {
+      state.excludedUsersInput = action.payload;
+    },
+    setExcludedUsers: (state, action: PayloadAction<string[]>) => {
+      state.excludedUsers = action.payload;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     },
     setGroups: (state, action: PayloadAction<VideoGroup[]>) => {
@@ -117,6 +130,8 @@ const searchSlice = createSlice({
 export const {
   setSearchInput,
   setKeywords,
+  setExcludedUsersInput,
+  setExcludedUsers,
   setGroups,
   setLoading,
   setSearched,

@@ -124,6 +124,14 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
                 for kw in keywords:
                     q_objs |= Q(message__icontains=kw) | Q(commenter_display_name__icontains=kw)
                 qs = qs.filter(q_objs)
+                
+        exclude_users = self.request.query_params.get('exclude_users')
+        if exclude_users:
+            users = [u.strip().lower() for u in exclude_users.split(',') if u.strip()]
+            if users:
+                for u in users:
+                    qs = qs.exclude(commenter_display_name__iexact=u)
+                    
         return qs
 
 

@@ -24,6 +24,7 @@ export const getComments = async (params: {
   video__streamer?: string;
   search?: string;
   search_or?: string;
+  exclude_users?: string;
   page?: number;
   page_size?: number;
 }) => {
