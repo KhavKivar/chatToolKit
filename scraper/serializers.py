@@ -17,7 +17,8 @@ class CommentSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'video_id', 'video_title', 'video_streamer', 'video_created_at',
             'commenter_login', 'commenter_display_name',
-            'content_offset_seconds', 'message', 'created_at'
+            'content_offset_seconds', 'message', 'created_at',
+            'is_toxic', 'toxicity_score'
         ]
 
 class StreamerSerializer(serializers.ModelSerializer):
