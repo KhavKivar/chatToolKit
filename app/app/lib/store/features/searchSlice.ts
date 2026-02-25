@@ -38,6 +38,7 @@ interface SearchState {
   canScanMore: boolean;
   lastScannedPage: number;
   isScanningMore: boolean;
+  toxicOnly: boolean;
 }
 
 const STORAGE_KEY = "global_search_state";
@@ -76,6 +77,7 @@ const initialState: SearchState = loadState() || {
   canScanMore: false,
   lastScannedPage: 0,
   isScanningMore: false,
+  toxicOnly: false,
 };
 
 const searchSlice = createSlice({
@@ -124,6 +126,10 @@ const searchSlice = createSlice({
     setIsScanningMore: (state, action: PayloadAction<boolean>) => {
       state.isScanningMore = action.payload;
     },
+    setToxicOnly: (state, action: PayloadAction<boolean>) => {
+      state.toxicOnly = action.payload;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    },
   },
 });
 
@@ -141,5 +147,6 @@ export const {
   setCanScanMore,
   setLastScannedPage,
   setIsScanningMore,
+  setToxicOnly,
 } = searchSlice.actions;
 export default searchSlice.reducer;

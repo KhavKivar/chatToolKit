@@ -25,6 +25,7 @@ export const getComments = async (params: {
   search?: string;
   search_or?: string;
   exclude_users?: string;
+  is_toxic?: boolean;
   page?: number;
   page_size?: number;
 }) => {
