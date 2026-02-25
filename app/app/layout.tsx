@@ -8,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 import { ReduxProvider } from "./components/ReduxProvider";
+import { Analytics } from "@vercel/analytics/next";
 
 export default function RootLayout({
   children,
@@ -25,6 +26,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <Analytics />
           </ThemeProvider>
         </ReduxProvider>
       </body>
