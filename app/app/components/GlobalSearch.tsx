@@ -901,6 +901,21 @@ export function GlobalSearch() {
                               >
                                 {c.matchedKeyword}
                               </Badge>
+
+                              {c.is_toxic !== undefined && (
+                                <Badge
+                                  variant={
+                                    c.is_toxic ? "destructive" : "outline"
+                                  }
+                                  className={`text-[10px] ${
+                                    !c.is_toxic
+                                      ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800"
+                                      : ""
+                                  }`}
+                                >
+                                  {c.is_toxic ? "Toxic" : "Healthy"}
+                                </Badge>
+                              )}
                             </div>
                             {/* Right: Actions */}
                             <div className="flex items-center gap-2 shrink-0">
