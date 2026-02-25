@@ -251,7 +251,7 @@ export function GlobalSearch() {
       const activeFilter =
         filterOverride !== undefined ? filterOverride : streamerFilter;
 
-      if (keywords.length === 0) {
+      if (keywords.length === 0 && !toxicOnly) {
         dispatch(setLoading(false));
         dispatch(setIsScanningMore(false));
         return;
@@ -310,8 +310,15 @@ export function GlobalSearch() {
                 bestKw = kw;
               }
             }
-            if (best >= THRESHOLD)
+            if (keywords.length === 0 && toxicOnly) {
+              allMatches.push({
+                ...c,
+                score: 1,
+                matchedKeyword: "Toxic Comment",
+              });
+            } else if (best >= THRESHOLD) {
               allMatches.push({ ...c, score: best, matchedKeyword: bestKw });
+            }
           }
 
           // Stop loop if we found matches OR we reached a batch limit
@@ -580,8 +587,8 @@ export function GlobalSearch() {
                 onChange={(e) => {
                   const val = e.target.checked;
                   dispatch(setToxicOnly(val));
-                  if (keywords.length > 0) {
-                    // Trigger fresh search
+                  if (val || keywords.length > 0) {
+                    // Trigger fresh search if turning ON or if we have keywords
                     searchInProgress.current = false;
                     searchWithFilter(false);
                   }
@@ -600,7 +607,7 @@ export function GlobalSearch() {
             </div>
           </div>
 
-          {keywords.length > 0 || excludedUsers.length > 0 ? (
+          {keywords.length > 0 || excludedUsers.length > 0 || toxicOnly ? (
             <div className="flex flex-col gap-2">
               {keywords.length > 0 && (
                 <div className="flex flex-wrap gap-2">
@@ -622,6 +629,19 @@ export function GlobalSearch() {
                       </button>
                     </Badge>
                   ))}
+                </div>
+              )}
+              {toxicOnly && keywords.length === 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs text-muted-foreground self-center mr-1">
+                    Mode:
+                  </span>
+                  <Badge
+                    variant="outline"
+                    className="gap-1.5 px-3 py-1 text-sm bg-red-500/10 text-red-500 border-red-500/20"
+                  >
+                    All Toxic Comments
+                  </Badge>
                 </div>
               )}
               {excludedUsers.length > 0 && (
@@ -656,7 +676,7 @@ export function GlobalSearch() {
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
             onClick={() => handleSearch()}
-            disabled={loading || keywords.length === 0}
+            disabled={loading || (keywords.length === 0 && !toxicOnly)}
           >
             {loading ? (
               <>
@@ -669,7 +689,11 @@ export function GlobalSearch() {
                 {streamerFilter
                   ? `Search in @${streamers.find((s) => s.id === streamerFilter)?.display_name || "Streamer"}'s Chats`
                   : `Search in All Chats`}{" "}
-                ({keywords.length} keyword{keywords.length !== 1 ? "s" : ""})
+                {keywords.length > 0
+                  ? `(${keywords.length} keyword${keywords.length !== 1 ? "s" : ""})`
+                  : toxicOnly
+                    ? "(Toxic only)"
+                    : ""}
               </>
             )}
           </Button>
