@@ -21,3 +21,5 @@ jobs:
             ./venv/bin/python manage.py migrate
             sudo systemctl restart chat-server
             sudo systemctl restart chat-worker
+            sudo systemctl restart chat-classifier
+            sudo systemctl restart chat-sync
