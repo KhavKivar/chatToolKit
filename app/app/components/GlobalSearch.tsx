@@ -48,6 +48,7 @@ import {
   setCanScanMore,
   setLastScannedPage,
   setIsScanningMore,
+  setToxicOnly,
 } from "../lib/store/features/searchSlice";
 
 interface Comment {
@@ -59,6 +60,8 @@ interface Comment {
   video_title: string;
   video_streamer: string;
   video_created_at?: string;
+  is_toxic?: boolean;
+  toxicity_score?: number;
 }
 
 interface Streamer {
@@ -169,6 +172,7 @@ export function GlobalSearch() {
     canScanMore,
     lastScannedPage,
     isScanningMore,
+    toxicOnly,
   } = useSelector((state: RootState) => state.search);
 
   const searchParams = useSearchParams();
@@ -280,6 +284,7 @@ export function GlobalSearch() {
             page_size: 500,
             search_or: keywords.join(","),
             exclude_users: excludedUsers.join(","),
+            is_toxic: toxicOnly || undefined,
             video__streamer: activeFilter || undefined,
           });
           const newBatch: Comment[] = data.results ?? [];
@@ -398,6 +403,7 @@ export function GlobalSearch() {
       lastScannedPage,
       groups,
       excludedUsers,
+      toxicOnly,
     ],
   );
 
@@ -545,7 +551,7 @@ export function GlobalSearch() {
             </Button>
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-4 items-center">
             <select
               className="flex h-10 w-full md:w-[250px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               value={streamerFilter}
@@ -565,6 +571,33 @@ export function GlobalSearch() {
                 </option>
               ))}
             </select>
+
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="toxic-only"
+                checked={toxicOnly}
+                onChange={(e) => {
+                  const val = e.target.checked;
+                  dispatch(setToxicOnly(val));
+                  if (keywords.length > 0) {
+                    // Trigger fresh search
+                    searchInProgress.current = false;
+                    searchWithFilter(false);
+                  }
+                }}
+                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
+              />
+              <label
+                htmlFor="toxic-only"
+                className="text-sm font-medium leading-none cursor-pointer flex items-center gap-1.5"
+              >
+                <span className="text-red-500 font-bold">Toxic Only</span>
+                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 rounded uppercase tracking-tighter">
+                  Pro
+                </span>
+              </label>
+            </div>
           </div>
 
           {keywords.length > 0 || excludedUsers.length > 0 ? (
