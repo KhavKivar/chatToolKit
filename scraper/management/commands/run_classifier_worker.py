@@ -9,6 +9,11 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS('Starting classification worker...'))
 
+        # Cleanup: Reset any tasks that were interrupted (stuck in InProgress)
+        stuck_tasks = ClassificationTask.objects.filter(status='InProgress').update(status='Pending')
+        if stuck_tasks > 0:
+            self.stdout.write(self.style.NOTICE(f"Cleaned up {stuck_tasks} stuck 'InProgress' tasks."))
+
         # Only initialize the AI model when the worker starts up
         classifier_service = ToxicityClassifierService()
         self.stdout.write(self.style.SUCCESS('Classifier service ready.'))
