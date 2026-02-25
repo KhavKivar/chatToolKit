@@ -29,10 +29,17 @@ class ToxicityClassifierService:
 
         # We need to evaluate the comments into lists
         # But we must only fetch what's needed for the batch since texts might be large
-        
-        for i in range(0, total_comments, batch_size):
-            # Evaluate queryset batch locally
-            batch = list(comments[i:i+batch_size])
+        while processed < total_comments:
+            # Always take the first batch from the remaining unscored comments
+            # to avoid the "offset on shrinking queryset" bug.
+            batch = list(Comment.objects.filter(
+                video_id=video_id, 
+                toxicity_score__isnull=True
+            ).order_by('id')[:batch_size])
+            
+            if not batch:
+                break
+                
             texts = [str(c.message) if c.message else "" for c in batch]
             
             try:
