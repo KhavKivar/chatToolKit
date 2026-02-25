@@ -37,6 +37,8 @@ import { RootState } from "../lib/store";
 import {
   setSearchInput,
   setKeywords,
+  setExcludedUsersInput,
+  setExcludedUsers,
   setGroups,
   setLoading,
   setSearched,
@@ -103,9 +105,31 @@ function similarity(a: string, b: string): number {
 }
 
 function bestWordMatch(keyword: string, message: string): number {
-  if (message.toLowerCase().includes(keyword.toLowerCase())) return 1;
-  const words = message.toLowerCase().split(/\s+/);
-  return Math.max(0, ...words.map((word) => similarity(keyword, word)));
+  const kLower = keyword.toLowerCase();
+  const mLower = message.toLowerCase();
+  if (mLower.includes(kLower)) return 1;
+
+  // Clean punctuation but keep spaces to split words
+  const cleanKeyword = kLower.replace(/[^\w\s]/g, "");
+  const cleanMessage = mLower.replace(/[^\w\s]/g, "");
+
+  if (cleanMessage.includes(cleanKeyword)) return 1;
+
+  const mWords = cleanMessage.split(/\s+/).filter(Boolean);
+  const kWords = cleanKeyword.split(/\s+/).filter(Boolean);
+
+  if (mWords.length === 0 || kWords.length === 0) return 0;
+
+  // Single word keyword: check against all words in message
+  if (kWords.length === 1) {
+    return Math.max(0, ...mWords.map((word) => similarity(cleanKeyword, word)));
+  }
+
+  // Multi-word keyword: assess full string similarity, and also check word against word
+  return Math.max(
+    similarity(cleanKeyword, cleanMessage),
+    ...mWords.map((word) => similarity(cleanKeyword, word)),
+  );
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -134,6 +158,8 @@ export function GlobalSearch() {
   const {
     input,
     keywords,
+    excludedUsersInput,
+    excludedUsers,
     groups,
     loading,
     searched,
@@ -194,6 +220,26 @@ export function GlobalSearch() {
   const removeKeyword = (kw: string) =>
     saveKeywords(keywords.filter((k) => k !== kw));
 
+  const setExcludedInput = (val: string) =>
+    dispatch(setExcludedUsersInput(val));
+
+  const saveExcludedUsers = (users: string[]) => {
+    dispatch(setExcludedUsers(users));
+  };
+
+  const addExcludedUser = () => {
+    const u = excludedUsersInput.trim().toLowerCase();
+    if (!u || excludedUsers.includes(u)) {
+      setExcludedInput("");
+      return;
+    }
+    saveExcludedUsers([...excludedUsers, u]);
+    setExcludedInput("");
+  };
+
+  const removeExcludedUser = (u: string) =>
+    saveExcludedUsers(excludedUsers.filter((x) => x !== u));
+
   // searchWithFilter lets us run a fresh search with an explicit streamer value
   // without relying on the Redux state (which might not have updated yet).
   const searchWithFilter = React.useCallback(
@@ -233,6 +279,7 @@ export function GlobalSearch() {
             page,
             page_size: 500,
             search_or: keywords.join(","),
+            exclude_users: excludedUsers.join(","),
             video__streamer: activeFilter || undefined,
           });
           const newBatch: Comment[] = data.results ?? [];
@@ -344,7 +391,14 @@ export function GlobalSearch() {
         dispatch(setSearchProgress(""));
       }
     },
-    [keywords, streamerFilter, dispatch, lastScannedPage, groups],
+    [
+      keywords,
+      streamerFilter,
+      dispatch,
+      lastScannedPage,
+      groups,
+      excludedUsers,
+    ],
   );
 
   // Convenience alias — keeps existing call-sites working
@@ -374,6 +428,11 @@ export function GlobalSearch() {
       if (urlKw) {
         initialKeywords = urlKw.split(",").filter(Boolean);
         dispatch(setKeywords(initialKeywords));
+      }
+
+      const urlExcluded = searchParams.get("excluded");
+      if (urlExcluded) {
+        dispatch(setExcludedUsers(urlExcluded.split(",").filter(Boolean)));
       }
 
       const urlStreamer = searchParams.get("streamer");
@@ -423,6 +482,12 @@ export function GlobalSearch() {
       params.delete("keywords");
     }
 
+    if (excludedUsers.length > 0) {
+      params.set("excluded", excludedUsers.join(","));
+    } else {
+      params.delete("excluded");
+    }
+
     if (streamerFilter) {
       params.set("streamer", streamerFilter);
     } else {
@@ -431,7 +496,7 @@ export function GlobalSearch() {
 
     const newUrl = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
     window.history.replaceState(null, "", newUrl);
-  }, [keywords, streamerFilter, searchParams]);
+  }, [keywords, streamerFilter, searchParams, excludedUsers]);
 
   return (
     <div className="space-y-6">
@@ -465,6 +530,22 @@ export function GlobalSearch() {
           </div>
 
           <div className="flex gap-2">
+            <Input
+              placeholder='Exclude users (e.g. "guldasan") and press Enter...'
+              value={excludedUsersInput}
+              onChange={(e) => setExcludedInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && addExcludedUser()}
+            />
+            <Button
+              variant="outline"
+              onClick={addExcludedUser}
+              disabled={!excludedUsersInput.trim()}
+            >
+              <X size={15} className="mr-1" /> Exclude
+            </Button>
+          </div>
+
+          <div className="flex gap-2">
             <select
               className="flex h-10 w-full md:w-[250px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
               value={streamerFilter}
@@ -486,27 +567,56 @@ export function GlobalSearch() {
             </select>
           </div>
 
-          {keywords.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {keywords.map((kw) => (
-                <Badge
-                  key={kw}
-                  variant="secondary"
-                  className="gap-1.5 px-3 py-1 text-sm bg-primary/10 border-primary/20"
-                >
-                  {kw}
-                  <button
-                    onClick={() => removeKeyword(kw)}
-                    className="ml-1 hover:text-destructive transition-colors"
-                  >
-                    <X size={11} />
-                  </button>
-                </Badge>
-              ))}
+          {keywords.length > 0 || excludedUsers.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {keywords.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs text-muted-foreground self-center mr-1">
+                    Search:
+                  </span>
+                  {keywords.map((kw) => (
+                    <Badge
+                      key={kw}
+                      variant="secondary"
+                      className="gap-1.5 px-3 py-1 text-sm bg-primary/10 border-primary/20"
+                    >
+                      {kw}
+                      <button
+                        onClick={() => removeKeyword(kw)}
+                        className="ml-1 hover:text-destructive transition-colors"
+                      >
+                        <X size={11} />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+              {excludedUsers.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-xs text-muted-foreground self-center mr-1">
+                    Excl.:
+                  </span>
+                  {excludedUsers.map((u) => (
+                    <Badge
+                      key={u}
+                      variant="destructive"
+                      className="gap-1.5 px-3 py-1 text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
+                    >
+                      {u}
+                      <button
+                        onClick={() => removeExcludedUser(u)}
+                        className="ml-1 hover:text-destructive transition-colors"
+                      >
+                        <X size={11} />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           ) : !loading ? (
             <p className="text-sm text-muted-foreground italic">
-              No keywords yet — add some above.
+              No keywords or exclusions yet — add some above.
             </p>
           ) : null}
 
