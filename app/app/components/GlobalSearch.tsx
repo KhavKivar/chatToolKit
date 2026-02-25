@@ -902,7 +902,15 @@ export function GlobalSearch() {
                                 {c.matchedKeyword}
                               </Badge>
 
-                              {c.is_toxic !== undefined && (
+                              {c.toxicity_score === undefined ||
+                              c.toxicity_score === null ? (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] text-muted-foreground border-dashed"
+                                >
+                                  No tag yet
+                                </Badge>
+                              ) : (
                                 <Badge
                                   variant={
                                     c.is_toxic ? "destructive" : "outline"
