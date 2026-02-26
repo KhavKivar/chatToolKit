@@ -404,8 +404,8 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
         />
       </div>
 
-      {/* Row 1: Top Commenters | Most Toxic Volume | Highest Toxicity Rate */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Row 1a: Top Commenters | Most Toxic by Volume */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Power Users */}
         <Card>
           <CardHeader>
@@ -480,50 +480,51 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           </CardContent>
         </Card>
 
-        {/* Highest Toxicity Rate */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Skull size={16} className="text-orange-500" />
-              Highest Toxicity Rate
-            </CardTitle>
-            <CardDescription>% flagged per user (min 10 msgs)</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data.most_toxic_relative}
-                layout="vertical"
-                margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
-              >
-                <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={chart.gridColor} />
-                <XAxis
-                  type="number"
-                  domain={[0, "auto"]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                  tickFormatter={(v) => `${v}%`}
-                />
-                <YAxis
-                  dataKey="commenter_display_name"
-                  type="category"
-                  width={110}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                />
-                <Tooltip
-                  contentStyle={chartTooltipStyle(chart.isDark)}
-                  cursor={{ fill: "rgba(249,115,22,0.06)" }}
-                  formatter={(v) => [`${Number(v).toFixed(1)}%`, "Toxicity rate"]}
-                />
-                <Bar dataKey="ratio" radius={[0, 4, 4, 0]} barSize={18} fill="#f97316" />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Row 1b: Highest Toxicity Rate — full width */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Skull size={16} className="text-orange-500" />
+            Highest Toxicity Rate
+          </CardTitle>
+          <CardDescription>% flagged per user (min 10 msgs)</CardDescription>
+        </CardHeader>
+        <CardContent className="h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data.most_toxic_relative}
+              layout="vertical"
+              margin={{ left: 8, right: 48, top: 0, bottom: 0 }}
+            >
+              <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={chart.gridColor} />
+              <XAxis
+                type="number"
+                domain={[0, "auto"]}
+                axisLine={false}
+                tickLine={false}
+                tick={tickProps}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <YAxis
+                dataKey="commenter_display_name"
+                type="category"
+                width={130}
+                axisLine={false}
+                tickLine={false}
+                tick={tickProps}
+              />
+              <Tooltip
+                contentStyle={chartTooltipStyle(chart.isDark)}
+                cursor={{ fill: "rgba(249,115,22,0.06)" }}
+                formatter={(v) => [`${Number(v).toFixed(1)}%`, "Toxicity rate"]}
+              />
+              <Bar dataKey="ratio" radius={[0, 4, 4, 0]} barSize={22} fill="#f97316" />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
 
       {/* Row 2: Video Engagement vs Toxicity — with date on Y axis */}
       <Card>
@@ -537,12 +538,12 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
             most activity and how much was flagged
           </CardDescription>
         </CardHeader>
-        <CardContent className="h-[320px]">
+        <CardContent className="h-[360px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={videoToxicityData}
               layout="vertical"
-              margin={{ left: 8, right: 32, top: 4, bottom: 4 }}
+              margin={{ left: 8, right: 32, top: 16, bottom: 8 }}
               barCategoryGap="30%"
               barGap={3}
             >
