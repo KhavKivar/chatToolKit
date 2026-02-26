@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   XCircle,
   Search,
+  RotateCcw,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -18,6 +19,7 @@ import {
   getScrapeTasks,
   getClassificationTasks,
   refreshStreamerVods,
+  requeueClassification,
 } from "../lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -348,41 +350,60 @@ export function StreamerManager() {
                       key={t.id}
                       className="p-3 border rounded-lg bg-card text-sm space-y-2"
                     >
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-foreground">
+                      <div className="flex justify-between items-center gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-bold text-foreground shrink-0">
                             {t.video_streamer}
                           </span>
-                          <span className="text-xs text-muted-foreground">
-                            VOD: {t.video_id}
+                          <span className="text-xs text-muted-foreground truncate">
+                            {t.video_title || `VOD ${t.video_id}`}
                           </span>
                         </div>
 
-                        {t.status === "Pending" && (
-                          <Badge variant="secondary" className="text-[10px]">
-                            <RefreshCw size={10} className="mr-1" /> Pending
-                          </Badge>
-                        )}
-                        {t.status === "InProgress" && (
-                          <Badge className="text-[10px] bg-blue-500 hover:bg-blue-600">
-                            <Loader2 size={10} className="mr-1 animate-spin" />{" "}
-                            {t.progress_percent}%
-                          </Badge>
-                        )}
-                        {t.status === "Completed" && (
-                          <Badge className="text-[10px] bg-green-500 hover:bg-green-600">
-                            <CheckCircle2 size={10} className="mr-1" /> Done
-                          </Badge>
-                        )}
-                        {t.status === "Failed" && (
-                          <Badge variant="destructive" className="text-[10px]">
-                            <XCircle size={10} className="mr-1" /> Failed
-                          </Badge>
-                        )}
-                      </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {t.status === "Pending" && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              <RefreshCw size={10} className="mr-1" /> Pending
+                            </Badge>
+                          )}
+                          {t.status === "InProgress" && (
+                            <Badge className="text-[10px] bg-blue-500 hover:bg-blue-600">
+                              <Loader2 size={10} className="mr-1 animate-spin" />{" "}
+                              {t.progress_percent}%
+                            </Badge>
+                          )}
+                          {t.status === "Completed" && (
+                            <Badge className="text-[10px] bg-green-500 hover:bg-green-600">
+                              <CheckCircle2 size={10} className="mr-1" /> Done
+                            </Badge>
+                          )}
+                          {t.status === "Failed" && (
+                            <Badge variant="destructive" className="text-[10px]">
+                              <XCircle size={10} className="mr-1" /> Failed
+                            </Badge>
+                          )}
 
-                      <div className="text-xs text-muted-foreground">
-                        {t.video_title}
+                          {/* Re-classify button for completed or failed tasks */}
+                          {(t.status === "Completed" || t.status === "Failed") && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-orange-500"
+                              title="Re-run classification from scratch"
+                              onClick={async () => {
+                                try {
+                                  await requeueClassification(t.video_id);
+                                  fetchData();
+                                } catch (e: unknown) {
+                                  const err = e as { response?: { data?: { error?: string } } };
+                                  alert(err.response?.data?.error || "Failed to re-queue");
+                                }
+                              }}
+                            >
+                              <RotateCcw size={12} />
+                            </Button>
+                          )}
+                        </div>
                       </div>
 
                       {t.status === "InProgress" && (

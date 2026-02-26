@@ -355,11 +355,11 @@ class TwitchScraperService:
                 "video_title": video_obj.title if video_obj else "",
             })
 
-        # Automatically queue this video for classification if a completed task doesn't already exist
-        is_done = ClassificationTask.objects.filter(video=video_obj, status='Completed').exists()
+        # Queue classification for any unscored comments (handles partial scrapes / re-scrapes)
+        unscored = Comment.objects.filter(video=video_obj, toxicity_score__isnull=True).count()
         has_active = ClassificationTask.objects.filter(video=video_obj, status__in=['Pending', 'InProgress']).exists()
-        if not is_done and not has_active:
-            # Delete any failed ones and create a fresh one
+        if unscored > 0 and not has_active:
+            # Remove stale completed/failed tasks and create a fresh pending one
             ClassificationTask.objects.filter(video=video_obj).exclude(status__in=['Pending', 'InProgress']).delete()
             ClassificationTask.objects.create(
                 video=video_obj,

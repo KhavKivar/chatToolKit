@@ -385,3 +385,32 @@ class ClassificationTaskViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ).order_by('status_order', '-updated_at')
 
+    @action(detail=False, methods=['post'], url_path='requeue')
+    def requeue(self, request):
+        """
+        Re-queue classification for a video, resetting toxicity scores so all
+        comments get re-classified from scratch.
+        POST /api/classification-tasks/requeue/  { "video_id": "..." }
+        """
+        video_id = request.data.get('video_id')
+        if not video_id:
+            return Response({'error': 'video_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            video = Video.objects.get(pk=video_id)
+        except Video.DoesNotExist:
+            return Response({'error': 'Video not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Block if already running
+        if ClassificationTask.objects.filter(video=video, status__in=['Pending', 'InProgress']).exists():
+            return Response({'error': 'Classification already in progress for this video'}, status=status.HTTP_409_CONFLICT)
+
+        # Reset all toxicity scores so the worker re-classifies everything
+        Comment.objects.filter(video=video).update(toxicity_score=None, is_toxic=False)
+
+        # Replace any existing tasks with a fresh pending one
+        ClassificationTask.objects.filter(video=video).delete()
+        task = ClassificationTask.objects.create(video=video, status='Pending')
+
+        return Response(self.get_serializer(task).data, status=status.HTTP_201_CREATED)
+
