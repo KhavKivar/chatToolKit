@@ -131,6 +131,14 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
             if users:
                 for u in users:
                     qs = qs.exclude(commenter_display_name__iexact=u)
+
+        min_toxicity = self.request.query_params.get('min_toxicity')
+        if min_toxicity:
+            try:
+                threshold = float(min_toxicity) / 100.0
+                qs = qs.filter(toxicity_score__gte=threshold)
+            except ValueError:
+                pass
                     
         return qs
 
