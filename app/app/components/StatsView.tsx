@@ -117,6 +117,7 @@ interface StatsData {
   most_toxic_relative: StatItem[];
   toxicity_by_video: StatItem[];
   hourly_stats: StatItem[];
+  total_videos: number;
 }
 
 interface Streamer {
@@ -248,13 +249,12 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
         : "0";
     const topCommenter =
       data.top_commenters[0]?.commenter_display_name ?? "—";
-    const uniqueVideos = data.toxicity_by_video.length;
     return {
       totalMessages,
       totalToxic,
       toxicRate,
       topCommenter,
-      uniqueVideos,
+      uniqueVideos: data.total_videos,
     };
   }, [data]);
 
