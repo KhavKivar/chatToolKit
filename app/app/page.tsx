@@ -1,15 +1,26 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import AddVideo from "./components/AddVideo";
 import { LibraryView } from "./components/LibraryView";
 import { StreamerManager } from "./components/StreamerManager";
 import { ModeToggle } from "./components/mode-toggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, Search, Twitch } from "lucide-react";
+import { LayoutDashboard, Search, Twitch, BarChart2 } from "lucide-react";
 import Link from "next/link";
+import { StatsView } from "./components/StatsView";
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const defaultTab = searchParams.get("tab") || "videos";
+  const [activeTab, setActiveTab] = React.useState(defaultTab);
+
+  React.useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab) setActiveTab(tab);
+  }, [searchParams]);
+
   return (
     <div className="min-h-screen bg-background">
       <nav className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
@@ -28,6 +39,13 @@ export default function Home() {
               <Search size={16} />
               Global Search
             </Link>
+            <Link
+              href="/?tab=stats"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+            >
+              <BarChart2 size={16} />
+              Stats
+            </Link>
             <ModeToggle />
           </div>
         </div>
@@ -40,9 +58,9 @@ export default function Home() {
           }}
         />
 
-        <Tabs defaultValue="videos" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex items-center gap-4 mb-8">
-            <TabsList className="grid w-full max-w-[400px] grid-cols-2">
+            <TabsList className="grid w-full max-w-[500px] grid-cols-3">
               <TabsTrigger value="videos" className="flex items-center gap-2">
                 <LayoutDashboard size={16} /> Library
               </TabsTrigger>
@@ -51,6 +69,9 @@ export default function Home() {
                 className="flex items-center gap-2"
               >
                 <Twitch size={16} /> Streamers
+              </TabsTrigger>
+              <TabsTrigger value="stats" className="flex items-center gap-2">
+                <BarChart2 size={16} /> Stats
               </TabsTrigger>
             </TabsList>
             <Link href="/search">
@@ -67,6 +88,10 @@ export default function Home() {
 
           <TabsContent value="streamers">
             <StreamerManager />
+          </TabsContent>
+
+          <TabsContent value="stats">
+            <StatsView />
           </TabsContent>
         </Tabs>
       </main>

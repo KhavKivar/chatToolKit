@@ -9,6 +9,8 @@ from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask
 from .serializers import VideoSerializer, CommentSerializer, StreamerSerializer, ScrapeTaskSerializer, ClassificationTaskSerializer
 from .services import TwitchScraperService
 from datetime import datetime, timezone, timedelta
+from django.db.models import Count, Q, F, FloatField, ExpressionWrapper, Case, When, IntegerField
+from django.db.models.functions import Cast
 
 
 class SSERenderer(BaseRenderer):
@@ -167,6 +169,60 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(comments, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'])
+    def stats(self, request):
+        streamer_id = request.query_params.get('streamer_id')
+        
+        qs = Comment.objects.all()
+        if streamer_id:
+            qs = qs.filter(video__streamer_id=streamer_id)
+            
+        # 1. Top commenters
+        top_commenters = qs.values('commenter_login', 'commenter_display_name')\
+            .annotate(count=Count('id'))\
+            .order_by('-count')[:10]
+            
+        # 2. Most toxic users (absolute)
+        most_toxic_absolute = qs.filter(is_toxic=True)\
+            .values('commenter_login', 'commenter_display_name')\
+            .annotate(toxic_count=Count('id'))\
+            .order_by('-toxic_count')[:10]
+            
+        # 3. Most toxic users (relative - percentage)
+        # Filter by min 10 comments to be statistically significant
+        most_toxic_relative = qs.values('commenter_login', 'commenter_display_name')\
+            .annotate(
+                total_count=Count('id'),
+                toxic_count=Count('id', filter=Q(is_toxic=True))
+            )\
+            .filter(total_count__gte=10)\
+            .annotate(
+                ratio=ExpressionWrapper(
+                    Cast(F('toxic_count'), FloatField()) / Cast(F('total_count'), FloatField()) * 100,
+                    output_field=FloatField()
+                )
+            )\
+            .order_by('-ratio')[:10]
+
+        # 4. Toxicity by Video
+        toxicity_by_video = qs.values('video__id', 'video__title')\
+            .annotate(
+                total_count=Count('id'),
+                toxic_count=Count('id', filter=Q(is_toxic=True)),
+                ratio=ExpressionWrapper(
+                    Cast(F('toxic_count'), FloatField()) / Cast(F('total_count'), FloatField()) * 100,
+                    output_field=FloatField()
+                )
+            )\
+            .order_by('-ratio')[:10]
+
+        return Response({
+            "top_commenters": list(top_commenters),
+            "most_toxic_absolute": list(most_toxic_absolute),
+            "most_toxic_relative": list(most_toxic_relative),
+            "toxicity_by_video": list(toxicity_by_video)
+        })
 
 
 class StreamerViewSet(viewsets.ModelViewSet):
