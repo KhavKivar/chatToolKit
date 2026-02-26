@@ -68,6 +68,13 @@ export const getStreamers = async () => {
   return response.data;
 };
 
+export const getStats = async (streamerId?: string) => {
+  const response = await api.get("/comments/stats/", {
+    params: { streamer_id: streamerId },
+  });
+  return response.data;
+};
+
 export const addStreamer = async (login: string) => {
   const response = await api.post("/streamers/", { login });
   return response.data;
