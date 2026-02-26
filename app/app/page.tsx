@@ -7,11 +7,19 @@ import { LibraryView } from "./components/LibraryView";
 import { StreamerManager } from "./components/StreamerManager";
 import { ModeToggle } from "./components/mode-toggle";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, Search, Twitch, BarChart2 } from "lucide-react";
+import {
+  LayoutDashboard,
+  Search,
+  Twitch,
+  BarChart2,
+  Loader2,
+} from "lucide-react";
 import Link from "next/link";
 import { StatsView } from "./components/StatsView";
 
-export default function Home() {
+import { Suspense } from "react";
+
+function HomeContent() {
   const searchParams = useSearchParams();
   const defaultTab = searchParams.get("tab") || "videos";
   const [activeTab, setActiveTab] = React.useState(defaultTab);
@@ -113,5 +121,19 @@ export default function Home() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-background flex items-center justify-center">
+          <Loader2 className="animate-spin text-primary" size={40} />
+        </div>
+      }
+    >
+      <HomeContent />
+    </Suspense>
   );
 }
