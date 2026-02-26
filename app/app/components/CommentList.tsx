@@ -147,7 +147,10 @@ export default function CommentList({ videoId }: { videoId: string }) {
       </CardHeader>
 
       <CardContent className="flex-1 overflow-hidden pt-0">
-        <ScrollArea className="h-[calc(100vh-320px)] pr-4">
+        <ScrollArea
+          className="h-[calc(100vh-320px)] pr-4"
+          style={{ overscrollBehavior: "contain" }}
+        >
           <div className="space-y-3">
             {comments.map((c) => (
               <div
