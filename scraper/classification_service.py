@@ -47,19 +47,19 @@ class ToxicityClassifierService:
                 
                 with transaction.atomic():
                     for obj, res in zip(batch, results):
-                        obj.toxicity_score = res['score']
-                        # Depending on the model, label is 'LABEL_1' (offensive) or 'LABEL_0' (not-offensive)
-                        # Or 'LABEL_0' might be offensive. For cardiffnlp: LABEL_0 is neutral, LABEL_1 is positive, etc?
-                        # Actually for cardiffnlp/twitter-roberta-base-offensive,LABEL_1 is offensive
                         label = res['label'].lower()
-                        # cardiffnlp uses 'non-offensive' and 'offensive'. 
-                        # 'offensive' in 'non-offensive' is true, so we must be specific.
-                        if 'label_1' in label:
-                            obj.is_toxic = True
-                        elif label == 'offensive':
-                            obj.is_toxic = True
+                        score = res['score']
+                        
+                        # Normalize to "Probability of being offensive"
+                        # LABEL_1 is offensive, LABEL_0 is non-offensive
+                        if 'label_1' in label or label == 'offensive':
+                            toxicity_prob = score
                         else:
-                            obj.is_toxic = False
+                            toxicity_prob = 1 - score
+                            
+                        obj.toxicity_score = toxicity_prob
+                        # Strict threshold: Only mark as toxic if >= 0.8 confidence
+                        obj.is_toxic = toxicity_prob >= 0.8
                         
                         obj.save(update_fields=['is_toxic', 'toxicity_score'])
                 

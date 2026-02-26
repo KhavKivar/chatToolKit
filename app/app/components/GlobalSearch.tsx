@@ -911,18 +911,27 @@ export function GlobalSearch() {
                                 >
                                   No tag yet
                                 </Badge>
+                              ) : c.toxicity_score >= 0.8 ? (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-[10px]"
+                                >
+                                  Toxic {Math.round(c.toxicity_score * 100)}%
+                                </Badge>
+                              ) : c.toxicity_score >= 0.4 ? (
+                                <Badge
+                                  variant="secondary"
+                                  className="text-[10px] bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800"
+                                >
+                                  Neutral {Math.round(c.toxicity_score * 100)}%
+                                </Badge>
                               ) : (
                                 <Badge
-                                  variant={
-                                    c.is_toxic ? "destructive" : "outline"
-                                  }
-                                  className={`text-[10px] ${
-                                    !c.is_toxic
-                                      ? "text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800"
-                                      : ""
-                                  }`}
+                                  variant="outline"
+                                  className="text-[10px] text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800"
                                 >
-                                  {c.is_toxic ? "Toxic" : "Healthy"}
+                                  Non Toxic{" "}
+                                  {Math.round((1 - c.toxicity_score) * 100)}%
                                 </Badge>
                               )}
                             </div>
