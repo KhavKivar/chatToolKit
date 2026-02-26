@@ -12,6 +12,8 @@ interface Comment {
   commenter_display_name: string;
   message: string;
   content_offset_seconds: number;
+  is_toxic?: boolean;
+  toxicity_score?: number;
 }
 
 export default function CommentList({ videoId }: { videoId: string }) {
@@ -69,7 +71,7 @@ export default function CommentList({ videoId }: { videoId: string }) {
           fetchComments(page + 1);
         }
       },
-      { threshold: 1.0 },
+      { threshold: 0.1, rootMargin: "200px" },
     );
 
     if (observerTarget.current) {
@@ -162,6 +164,26 @@ export default function CommentList({ videoId }: { videoId: string }) {
                   <span className="text-foreground/90 wrap-break-word">
                     {c.message}
                   </span>
+
+                  {c.toxicity_score !== undefined &&
+                    c.toxicity_score !== null && (
+                      <div className="mt-1 flex gap-1">
+                        {c.toxicity_score >= 0.8 ? (
+                          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-red-500/10 text-red-500 border border-red-500/20">
+                            Toxic {Math.round(c.toxicity_score * 100)}%
+                          </span>
+                        ) : c.toxicity_score >= 0.4 ? (
+                          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-slate-500/10 text-slate-500 border border-slate-500/20">
+                            Neutral {Math.round(c.toxicity_score * 100)}%
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                            Non Toxic {Math.round((1 - c.toxicity_score) * 100)}
+                            %
+                          </span>
+                        )}
+                      </div>
+                    )}
                 </div>
               </div>
             ))}
