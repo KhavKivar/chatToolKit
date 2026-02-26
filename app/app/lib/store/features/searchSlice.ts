@@ -39,6 +39,7 @@ interface SearchState {
   lastScannedPage: number;
   isScanningMore: boolean;
   toxicOnly: boolean;
+  toxicityThreshold: number; // 0-100
 }
 
 const STORAGE_KEY = "global_search_state";
@@ -55,8 +56,9 @@ const loadState = (): SearchState | undefined => {
       loading: false,
       isScanningMore: false,
       searchProgress: "",
-      excludedUsersInput: parsed.excludedUsersInput || "", // Added default to handle old saved states
+      excludedUsersInput: parsed.excludedUsersInput || "",
       excludedUsers: parsed.excludedUsers || [],
+      toxicityThreshold: parsed.toxicityThreshold ?? 80,
     };
   } catch {
     return undefined;
@@ -78,6 +80,7 @@ const initialState: SearchState = loadState() || {
   lastScannedPage: 0,
   isScanningMore: false,
   toxicOnly: false,
+  toxicityThreshold: 80,
 };
 
 const searchSlice = createSlice({
@@ -130,6 +133,10 @@ const searchSlice = createSlice({
       state.toxicOnly = action.payload;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     },
+    setToxicityThreshold: (state, action: PayloadAction<number>) => {
+      state.toxicityThreshold = action.payload;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    },
   },
 });
 
@@ -148,5 +155,6 @@ export const {
   setLastScannedPage,
   setIsScanningMore,
   setToxicOnly,
+  setToxicityThreshold,
 } = searchSlice.actions;
 export default searchSlice.reducer;

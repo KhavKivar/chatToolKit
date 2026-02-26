@@ -49,6 +49,7 @@ import {
   setLastScannedPage,
   setIsScanningMore,
   setToxicOnly,
+  setToxicityThreshold,
 } from "../lib/store/features/searchSlice";
 
 interface Comment {
@@ -173,6 +174,7 @@ export function GlobalSearch() {
     lastScannedPage,
     isScanningMore,
     toxicOnly,
+    toxicityThreshold,
   } = useSelector((state: RootState) => state.search);
 
   const searchParams = useSearchParams();
@@ -284,7 +286,7 @@ export function GlobalSearch() {
             page_size: 500,
             search_or: keywords.join(","),
             exclude_users: excludedUsers.join(","),
-            is_toxic: toxicOnly || undefined,
+            min_toxicity: toxicOnly ? toxicityThreshold : undefined,
             video__streamer: activeFilter || undefined,
           });
           const newBatch: Comment[] = data.results ?? [];
@@ -411,6 +413,7 @@ export function GlobalSearch() {
       groups,
       excludedUsers,
       toxicOnly,
+      toxicityThreshold,
     ],
   );
 
@@ -581,6 +584,25 @@ export function GlobalSearch() {
                   Pro
                 </span>
               </label>
+
+              {toxicOnly && (
+                <div className="flex items-center gap-2 border-l border-border/50 pl-3 ml-1 animate-in slide-in-from-left-2 duration-200">
+                  <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
+                    Threshold:
+                  </span>
+                  <select
+                    value={toxicityThreshold}
+                    onChange={(e) =>
+                      dispatch(setToxicityThreshold(Number(e.target.value)))
+                    }
+                    className="h-7 bg-red-500/5 border border-red-500/10 text-[11px] font-bold rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-red-500/30 text-red-500 cursor-pointer hover:bg-red-500/10 transition-colors"
+                  >
+                    <option value={70}>70%+</option>
+                    <option value={80}>80%+</option>
+                    <option value={90}>90%+</option>
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
