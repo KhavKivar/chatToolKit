@@ -217,11 +217,23 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
             )\
             .order_by('-ratio')[:10]
 
+        # 5. Hourly Activity (Activity vs Toxicity by hour of day)
+        # We group by hour of the day to see when things get heated
+        from django.db.models.functions import ExtractHour
+        hourly_stats = qs.annotate(hour=ExtractHour('created_at'))\
+            .values('hour')\
+            .annotate(
+                count=Count('id'),
+                toxic_count=Count('id', filter=Q(is_toxic=True))
+            )\
+            .order_by('hour')
+
         return Response({
             "top_commenters": list(top_commenters),
             "most_toxic_absolute": list(most_toxic_absolute),
             "most_toxic_relative": list(most_toxic_relative),
-            "toxicity_by_video": list(toxicity_by_video)
+            "toxicity_by_video": list(toxicity_by_video),
+            "hourly_stats": list(hourly_stats)
         })
 
 
