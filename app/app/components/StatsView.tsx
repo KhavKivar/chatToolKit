@@ -15,6 +15,7 @@ import {
   Legend,
 } from "recharts";
 import { useTheme } from "next-themes";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getStats, getStreamers } from "../lib/api";
 import {
   Card,
@@ -25,19 +26,27 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Loader2,
   Users,
-  Skull,
   MessageSquare,
   TrendingUp,
-  Filter,
   ShieldAlert,
   AlertTriangle,
   BarChart2,
   Flame,
   Trophy,
   Video,
+  Skull,
+  ExternalLink,
 } from "lucide-react";
+import Link from "next/link";
 
 interface StatItem {
   commenter_login?: string;
@@ -48,6 +57,7 @@ interface StatItem {
   ratio?: number;
   video__title?: string;
   video__id?: string;
+  video__streamer_display_name?: string;
   hour?: number;
 }
 
@@ -69,11 +79,25 @@ function useChartTheme() {
   const isDark = resolvedTheme === "dark";
   return {
     isDark,
-    tickColor: isDark ? "hsl(215 20.2% 65.1%)" : "hsl(215.4 16.3% 46.9%)",
-    gridColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)",
-    tooltipBg: isDark ? "hsl(222.2 84% 4.9%)" : "hsl(0 0% 100%)",
-    tooltipBorder: isDark ? "hsl(217.2 32.6% 17.5%)" : "hsl(214.3 31.8% 91.4%)",
-    tooltipText: isDark ? "hsl(210 40% 98%)" : "hsl(222.2 47.4% 11.2%)",
+    tickColor: isDark ? "hsl(215, 15%, 60%)" : "hsl(215, 13%, 40%)",
+    gridColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)",
+    tooltipBg: isDark ? "#1c1c1e" : "#ffffff",
+    tooltipBorder: isDark ? "#2e2e32" : "#e4e4e7",
+    tooltipText: isDark ? "#f4f4f5" : "#18181b",
+  };
+}
+
+function chartTooltipStyle(isDark: boolean) {
+  return {
+    backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
+    border: `1px solid ${isDark ? "#2e2e32" : "#e4e4e7"}`,
+    borderRadius: "8px",
+    color: isDark ? "#f4f4f5" : "#18181b",
+    fontSize: "12px",
+    padding: "8px 12px",
+    boxShadow: isDark
+      ? "0 4px 20px rgba(0,0,0,0.5)"
+      : "0 4px 20px rgba(0,0,0,0.1)",
   };
 }
 
@@ -83,52 +107,63 @@ function StatKpiCard({
   sub,
   icon: Icon,
   color,
+  truncate,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   icon: React.ElementType;
   color: string;
+  truncate?: boolean;
 }) {
   return (
     <Card>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardDescription className="text-xs font-medium uppercase tracking-wider">
+          <CardDescription className="text-[11px] font-medium uppercase tracking-wider leading-tight">
             {label}
           </CardDescription>
-          <div className={`p-2 rounded-lg ${color}`}>
-            <Icon size={14} className="text-white" />
+          <div className={`p-1.5 rounded-md shrink-0 ${color}`}>
+            <Icon size={13} className="text-white" />
           </div>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <div className="text-3xl font-bold tracking-tight">{value}</div>
-        {sub && (
-          <p className="text-xs text-muted-foreground mt-1">{sub}</p>
-        )}
+        <div
+          className={`font-bold tracking-tight leading-tight ${
+            truncate
+              ? "text-base truncate"
+              : "text-2xl"
+          }`}
+          title={truncate ? String(value) : undefined}
+        >
+          {value}
+        </div>
+        {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
       </CardContent>
     </Card>
   );
 }
 
-function TooltipStyle(isDark: boolean) {
-  return {
-    backgroundColor: isDark ? "hsl(222.2, 84%, 4.9%)" : "#ffffff",
-    border: `1px solid ${isDark ? "hsl(217.2, 32.6%, 17.5%)" : "hsl(214.3, 31.8%, 91.4%)"}`,
-    borderRadius: "10px",
-    color: isDark ? "#f8fafc" : "#0f172a",
-    fontSize: "12px",
-    padding: "10px 14px",
-  };
-}
-
-export function StatsView() {
+export function StatsView({ standalone = false }: { standalone?: boolean }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [data, setData] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [streamers, setStreamers] = useState<Streamer[]>([]);
-  const [streamerFilter, setStreamerFilter] = useState("");
-  const chart = useChartTheme();
+
+  // Read streamer filter from URL param
+  const streamerFilter = searchParams.get("streamer") ?? "";
+
+  const setStreamerFilter = (val: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (val) {
+      params.set("streamer", val);
+    } else {
+      params.delete("streamer");
+    }
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
 
   useEffect(() => {
     getStreamers().then((res) => {
@@ -137,32 +172,42 @@ export function StatsView() {
   }, []);
 
   useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      try {
-        const stats = await getStats(streamerFilter || undefined);
-        setData(stats);
-      } catch (err) {
-        console.error("Failed to fetch stats:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchStats();
+    setLoading(true);
+    getStats(streamerFilter || undefined)
+      .then(setData)
+      .catch((err) => console.error("Failed to fetch stats:", err))
+      .finally(() => setLoading(false));
   }, [streamerFilter]);
+
+  const chart = useChartTheme();
 
   const kpis = useMemo(() => {
     if (!data) return null;
-    const totalMessages = data.hourly_stats.reduce((s, h) => s + (h.count || 0), 0);
-    const totalToxic = data.hourly_stats.reduce((s, h) => s + (h.toxic_count || 0), 0);
-    const toxicRate = totalMessages > 0 ? ((totalToxic / totalMessages) * 100).toFixed(1) : "0";
-    const topCommenter = data.top_commenters[0]?.commenter_display_name ?? "—";
-    const mostToxicVideo = data.toxicity_by_video[0]?.video__title ?? "—";
+    const totalMessages = data.hourly_stats.reduce(
+      (s, h) => s + (h.count || 0),
+      0
+    );
+    const totalToxic = data.hourly_stats.reduce(
+      (s, h) => s + (h.toxic_count || 0),
+      0
+    );
+    const toxicRate =
+      totalMessages > 0
+        ? ((totalToxic / totalMessages) * 100).toFixed(1)
+        : "0";
+    const topCommenter =
+      data.top_commenters[0]?.commenter_display_name ?? "—";
     const uniqueVideos = data.toxicity_by_video.length;
-    return { totalMessages, totalToxic, toxicRate, topCommenter, mostToxicVideo, uniqueVideos };
+    return {
+      totalMessages,
+      totalToxic,
+      toxicRate,
+      topCommenter,
+      uniqueVideos,
+    };
   }, [data]);
 
-  // Merge top commenters with their toxicity data
+  // Top commenters cross-referenced with toxicity
   const commenterCrossData = useMemo(() => {
     if (!data) return [];
     return data.top_commenters.slice(0, 8).map((c) => {
@@ -178,36 +223,38 @@ export function StatsView() {
     });
   }, [data]);
 
-  // Toxicity overview pie
+  // Pie chart: clean vs toxic
   const toxicityPieData = useMemo(() => {
     if (!kpis) return [];
-    const toxic = kpis.totalToxic;
-    const clean = kpis.totalMessages - toxic;
     return [
-      { name: "Clean", value: clean, fill: "#22c55e" },
-      { name: "Toxic", value: toxic, fill: "#ef4444" },
+      { name: "Clean", value: kpis.totalMessages - kpis.totalToxic, fill: "#22c55e" },
+      { name: "Toxic", value: kpis.totalToxic, fill: "#ef4444" },
     ];
   }, [kpis]);
 
-  // Video toxicity with both ratio and total_count
+  // Video data with streamer name in label
   const videoToxicityData = useMemo(() => {
     if (!data) return [];
-    return data.toxicity_by_video.slice(0, 8).map((v) => ({
-      title:
-        (v.video__title ?? "Unknown").length > 20
-          ? (v.video__title ?? "Unknown").substring(0, 17) + "…"
-          : (v.video__title ?? "Unknown"),
-      ratio: parseFloat((v.ratio ?? 0).toFixed(1)),
-      total: v.total_count ?? 0,
-      toxic: v.toxic_count ?? 0,
-    }));
+    return data.toxicity_by_video.slice(0, 8).map((v) => {
+      const streamer = v.video__streamer_display_name
+        ? `[${v.video__streamer_display_name}] `
+        : "";
+      const raw = `${streamer}${v.video__title ?? "Unknown"}`;
+      return {
+        title: raw.length > 24 ? raw.substring(0, 21) + "…" : raw,
+        fullTitle: raw,
+        ratio: parseFloat((v.ratio ?? 0).toFixed(1)),
+        total: v.total_count ?? 0,
+        toxic: v.toxic_count ?? 0,
+      };
+    });
   }, [data]);
 
   if (loading && !data) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-4">
         <Loader2 className="animate-spin text-primary" size={40} strokeWidth={2} />
-        <p className="text-sm font-medium tracking-wide">Loading analytics…</p>
+        <p className="text-sm font-medium">Loading analytics…</p>
       </div>
     );
   }
@@ -216,7 +263,7 @@ export function StatsView() {
 
   const tickProps = { fontSize: 11, fill: chart.tickColor };
 
-  return (
+  const content = (
     <div className="space-y-8 pb-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header & Filter */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b">
@@ -235,29 +282,34 @@ export function StatsView() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2 border rounded-lg px-3 py-2 bg-background text-sm">
-          <Filter size={14} className="text-muted-foreground" />
-          <label className="text-muted-foreground font-medium sr-only" htmlFor="streamer-filter">
-            Streamer
-          </label>
-          <select
-            id="streamer-filter"
-            className="bg-transparent border-none focus:ring-0 outline-none cursor-pointer text-foreground"
-            value={streamerFilter}
-            onChange={(e) => setStreamerFilter(e.target.value)}
-          >
-            <option value="">All Streamers</option>
-            {streamers.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.display_name}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-3">
+          <Select value={streamerFilter || "all"} onValueChange={(v) => setStreamerFilter(v === "all" ? "" : v)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All Streamers" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Streamers</SelectItem>
+              {streamers.map((s) => (
+                <SelectItem key={s.id} value={s.id}>
+                  {s.display_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {!standalone && (
+            <Link href={`/stats${streamerFilter ? `?streamer=${streamerFilter}` : ""}`}>
+              <Badge variant="outline" className="gap-1.5 cursor-pointer hover:bg-accent transition-colors whitespace-nowrap">
+                <ExternalLink size={11} />
+                Open full page
+              </Badge>
+            </Link>
+          )}
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatKpiCard
           label="Total Messages"
           value={kpis.totalMessages.toLocaleString()}
@@ -288,62 +340,139 @@ export function StatsView() {
           value={kpis.topCommenter}
           icon={Trophy}
           color="bg-yellow-500"
-        />
-        <StatKpiCard
-          label="Streamers"
-          value={streamers.length}
-          icon={Users}
-          color="bg-green-500"
+          truncate
         />
       </div>
 
-      {/* Row 1: Toxicity Overview Pie + Toxicity by Video */}
+      {/* Row 1: Video Engagement vs Toxicity — FIRST, most important */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Video size={16} className="text-green-500" />
+            Video Engagement vs Toxicity
+          </CardTitle>
+          <CardDescription>
+            Total messages and toxic count per VOD — see which streams had the
+            most activity and how much was flagged
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={videoToxicityData}
+              layout="vertical"
+              margin={{ left: 8, right: 32, top: 4, bottom: 4 }}
+              barCategoryGap="30%"
+              barGap={3}
+            >
+              <CartesianGrid
+                horizontal={false}
+                strokeDasharray="3 3"
+                stroke={chart.gridColor}
+              />
+              <XAxis
+                type="number"
+                axisLine={false}
+                tickLine={false}
+                tick={tickProps}
+              />
+              <YAxis
+                dataKey="title"
+                type="category"
+                width={145}
+                axisLine={false}
+                tickLine={false}
+                tick={tickProps}
+              />
+              <Tooltip
+                contentStyle={chartTooltipStyle(chart.isDark)}
+                cursor={{
+                  fill: chart.isDark
+                    ? "rgba(255,255,255,0.04)"
+                    : "rgba(0,0,0,0.04)",
+                }}
+                labelFormatter={(_, payload) =>
+                  payload?.[0]
+                    ? (payload[0].payload as { fullTitle: string }).fullTitle
+                    : ""
+                }
+              />
+              <Legend
+                iconType="square"
+                iconSize={8}
+                wrapperStyle={{ fontSize: 11 }}
+              />
+              <Bar
+                dataKey="total"
+                name="Total msgs"
+                fill="#3b82f6"
+                radius={[0, 3, 3, 0]}
+                barSize={10}
+              />
+              <Bar
+                dataKey="toxic"
+                name="Toxic msgs"
+                fill="#ef4444"
+                radius={[0, 3, 3, 0]}
+                barSize={10}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      {/* Row 2: Toxicity Overview + Most Toxic Videos (ratio) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Toxicity Overview */}
+        {/* Toxicity Overview Pie */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Flame size={16} className="text-orange-500" />
               Toxicity Overview
             </CardTitle>
-            <CardDescription>Share of clean vs flagged messages</CardDescription>
+            <CardDescription>
+              Share of clean vs flagged messages
+            </CardDescription>
           </CardHeader>
-          <CardContent className="h-[260px] flex flex-col items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
+          <CardContent className="h-[260px] flex flex-col items-center justify-center gap-2">
+            <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
                   data={toxicityPieData}
                   cx="50%"
-                  cy="45%"
+                  cy="50%"
                   innerRadius={55}
-                  outerRadius={85}
+                  outerRadius={82}
                   paddingAngle={3}
                   dataKey="value"
-                  animationDuration={1000}
+                  animationDuration={900}
                 >
                   {toxicityPieData.map((entry, i) => (
                     <Cell key={i} fill={entry.fill} />
                   ))}
                 </Pie>
                 <Tooltip
-                  contentStyle={TooltipStyle(chart.isDark)}
-                  formatter={(val) => [Number(val).toLocaleString(), ""]}
+                  contentStyle={chartTooltipStyle(chart.isDark)}
+                  formatter={(val) => [
+                    Number(val).toLocaleString(),
+                    undefined,
+                  ]}
                 />
                 <Legend
                   iconType="circle"
                   iconSize={8}
-                  wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
+                  wrapperStyle={{ fontSize: 11 }}
                 />
               </PieChart>
             </ResponsiveContainer>
-            <div className="text-center -mt-2">
+            <div className="text-center">
               <p className="text-2xl font-bold">{kpis.toxicRate}%</p>
               <p className="text-xs text-muted-foreground">overall toxicity</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Toxicity by Video */}
+        {/* Most Toxic Videos by ratio */}
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -357,7 +486,7 @@ export function StatsView() {
               <BarChart
                 data={videoToxicityData}
                 layout="vertical"
-                margin={{ left: 8, right: 24, top: 0, bottom: 0 }}
+                margin={{ left: 8, right: 32, top: 0, bottom: 0 }}
               >
                 <CartesianGrid
                   horizontal={false}
@@ -375,17 +504,30 @@ export function StatsView() {
                 <YAxis
                   dataKey="title"
                   type="category"
-                  width={130}
+                  width={145}
                   axisLine={false}
                   tickLine={false}
                   tick={tickProps}
                 />
                 <Tooltip
-                  contentStyle={TooltipStyle(chart.isDark)}
-                  cursor={{ fill: "rgba(139,92,246,0.08)" }}
-                  formatter={(val) => [`${Number(val).toFixed(1)}%`, "Toxicity"]}
+                  contentStyle={chartTooltipStyle(chart.isDark)}
+                  cursor={{ fill: "rgba(139,92,246,0.07)" }}
+                  labelFormatter={(_, payload) =>
+                    payload?.[0]
+                      ? (payload[0].payload as { fullTitle: string }).fullTitle
+                      : ""
+                  }
+                  formatter={(val) => [
+                    `${Number(val).toFixed(1)}%`,
+                    "Toxicity",
+                  ]}
                 />
-                <Bar dataKey="ratio" radius={[0, 4, 4, 0]} barSize={16} maxBarSize={20}>
+                <Bar
+                  dataKey="ratio"
+                  radius={[0, 4, 4, 0]}
+                  barSize={16}
+                  maxBarSize={20}
+                >
                   {videoToxicityData.map((_, i) => (
                     <Cell
                       key={i}
@@ -399,15 +541,16 @@ export function StatsView() {
         </Card>
       </div>
 
-      {/* Row 2: Top Commenters vs Toxicity (stacked bar) */}
+      {/* Row 3: Top Commenters stacked (clean vs toxic) */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <BarChart2 size={16} className="text-blue-500" />
-            Top Commenters — Clean vs Toxic Breakdown
+            Top Commenters — Clean vs Toxic
           </CardTitle>
           <CardDescription>
-            Message volume split by clean and flagged content for the most active users
+            Message volume split by clean and flagged content for the most
+            active users
           </CardDescription>
         </CardHeader>
         <CardContent className="h-[280px]">
@@ -415,7 +558,7 @@ export function StatsView() {
             <BarChart
               data={commenterCrossData}
               layout="vertical"
-              margin={{ left: 8, right: 24, top: 0, bottom: 0 }}
+              margin={{ left: 8, right: 32, top: 0, bottom: 0 }}
             >
               <CartesianGrid
                 horizontal={false}
@@ -437,38 +580,56 @@ export function StatsView() {
                 tick={tickProps}
               />
               <Tooltip
-                contentStyle={TooltipStyle(chart.isDark)}
-                cursor={{ fill: chart.isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}
+                contentStyle={chartTooltipStyle(chart.isDark)}
+                cursor={{
+                  fill: chart.isDark
+                    ? "rgba(255,255,255,0.03)"
+                    : "rgba(0,0,0,0.03)",
+                }}
               />
               <Legend
                 iconType="square"
                 iconSize={8}
                 wrapperStyle={{ fontSize: 11 }}
               />
-              <Bar dataKey="clean" name="Clean" stackId="a" fill="#3b82f6" radius={[0, 0, 0, 0]} barSize={18} />
-              <Bar dataKey="toxic" name="Toxic" stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={18} />
+              <Bar
+                dataKey="clean"
+                name="Clean"
+                stackId="a"
+                fill="#3b82f6"
+                barSize={18}
+              />
+              <Bar
+                dataKey="toxic"
+                name="Toxic"
+                stackId="a"
+                fill="#ef4444"
+                radius={[0, 4, 4, 0]}
+                barSize={18}
+              />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Row 3: Two charts side by side */}
+      {/* Row 4: Toxicity Rate + Toxic Volume */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Toxicity Leadership (relative %) */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <Skull size={16} className="text-orange-500" />
               Highest Toxicity Rate
             </CardTitle>
-            <CardDescription>Users with highest % of flagged messages (min 10 msgs)</CardDescription>
+            <CardDescription>
+              Users with highest % of flagged messages (min 10 msgs)
+            </CardDescription>
           </CardHeader>
           <CardContent className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={data.most_toxic_relative}
                 layout="vertical"
-                margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
+                margin={{ left: 8, right: 48, top: 0, bottom: 0 }}
               >
                 <CartesianGrid
                   horizontal={false}
@@ -492,13 +653,19 @@ export function StatsView() {
                   tick={tickProps}
                 />
                 <Tooltip
-                  contentStyle={TooltipStyle(chart.isDark)}
+                  contentStyle={chartTooltipStyle(chart.isDark)}
                   cursor={{ fill: "rgba(249,115,22,0.06)" }}
-                  formatter={(v) => [`${Number(v).toFixed(1)}%`, "Toxicity rate"]}
+                  formatter={(v) => [
+                    `${Number(v).toFixed(1)}%`,
+                    "Toxicity rate",
+                  ]}
                 />
                 <Bar dataKey="ratio" radius={[0, 4, 4, 0]} barSize={18}>
                   {data.most_toxic_relative.map((_, i) => (
-                    <Cell key={i} fill={`rgba(249,115,22,${1 - i * 0.08})`} />
+                    <Cell
+                      key={i}
+                      fill={`rgba(249,115,22,${1 - i * 0.08})`}
+                    />
                   ))}
                 </Bar>
               </BarChart>
@@ -506,21 +673,22 @@ export function StatsView() {
           </CardContent>
         </Card>
 
-        {/* Most Toxic by Volume */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
               <AlertTriangle size={16} className="text-red-500" />
               Most Toxic by Volume
             </CardTitle>
-            <CardDescription>Highest absolute count of flagged messages sent</CardDescription>
+            <CardDescription>
+              Highest absolute count of flagged messages sent
+            </CardDescription>
           </CardHeader>
           <CardContent className="h-[280px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={data.most_toxic_absolute}
                 layout="vertical"
-                margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
+                margin={{ left: 8, right: 48, top: 0, bottom: 0 }}
               >
                 <CartesianGrid
                   horizontal={false}
@@ -542,9 +710,12 @@ export function StatsView() {
                   tick={tickProps}
                 />
                 <Tooltip
-                  contentStyle={TooltipStyle(chart.isDark)}
+                  contentStyle={chartTooltipStyle(chart.isDark)}
                   cursor={{ fill: "rgba(239,68,68,0.06)" }}
-                  formatter={(v) => [Number(v).toLocaleString(), "Toxic messages"]}
+                  formatter={(v) => [
+                    Number(v).toLocaleString(),
+                    "Toxic messages",
+                  ]}
                 />
                 <Bar dataKey="toxic_count" radius={[0, 4, 4, 0]} barSize={18}>
                   {data.most_toxic_absolute.map((_, i) => (
@@ -557,106 +728,74 @@ export function StatsView() {
         </Card>
       </div>
 
-      {/* Row 4: Power Users & Video Message Volume */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Power Users */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Trophy size={16} className="text-yellow-500" />
-              Power Users
-            </CardTitle>
-            <CardDescription>Most active community members by message count</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data.top_commenters}
-                layout="vertical"
-                margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
-              >
-                <CartesianGrid
-                  horizontal={false}
-                  strokeDasharray="3 3"
-                  stroke={chart.gridColor}
-                />
-                <XAxis
-                  type="number"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                />
-                <YAxis
-                  dataKey="commenter_display_name"
-                  type="category"
-                  width={110}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                />
-                <Tooltip
-                  contentStyle={TooltipStyle(chart.isDark)}
-                  cursor={{ fill: chart.isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }}
-                  formatter={(v) => [Number(v).toLocaleString(), "Messages"]}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={18}>
-                  {data.top_commenters.map((_, i) => (
-                    <Cell key={i} fill={`rgba(59,130,246,${1 - i * 0.08})`} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        {/* Video message volume + toxicity count side by side */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Video size={16} className="text-green-500" />
-              Video Engagement vs Toxicity
-            </CardTitle>
-            <CardDescription>Total messages and toxic count per VOD</CardDescription>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={videoToxicityData}
-                layout="vertical"
-                margin={{ left: 8, right: 24, top: 0, bottom: 0 }}
-                barCategoryGap="25%"
-              >
-                <CartesianGrid
-                  horizontal={false}
-                  strokeDasharray="3 3"
-                  stroke={chart.gridColor}
-                />
-                <XAxis
-                  type="number"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                />
-                <YAxis
-                  dataKey="title"
-                  type="category"
-                  width={130}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                />
-                <Tooltip
-                  contentStyle={TooltipStyle(chart.isDark)}
-                  cursor={{ fill: chart.isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}
-                />
-                <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                <Bar dataKey="total" name="Total msgs" fill="#22c55e" radius={[0, 2, 2, 0]} barSize={10} />
-                <Bar dataKey="toxic" name="Toxic msgs" fill="#ef4444" radius={[0, 2, 2, 0]} barSize={10} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Row 5: Power Users */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Trophy size={16} className="text-yellow-500" />
+            Power Users
+          </CardTitle>
+          <CardDescription>
+            Most active community members by total message count
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="h-[280px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={data.top_commenters}
+              layout="vertical"
+              margin={{ left: 8, right: 48, top: 0, bottom: 0 }}
+            >
+              <CartesianGrid
+                horizontal={false}
+                strokeDasharray="3 3"
+                stroke={chart.gridColor}
+              />
+              <XAxis
+                type="number"
+                axisLine={false}
+                tickLine={false}
+                tick={tickProps}
+              />
+              <YAxis
+                dataKey="commenter_display_name"
+                type="category"
+                width={110}
+                axisLine={false}
+                tickLine={false}
+                tick={tickProps}
+              />
+              <Tooltip
+                contentStyle={chartTooltipStyle(chart.isDark)}
+                cursor={{
+                  fill: chart.isDark
+                    ? "rgba(255,255,255,0.04)"
+                    : "rgba(0,0,0,0.04)",
+                }}
+                formatter={(v) => [Number(v).toLocaleString(), "Messages"]}
+              />
+              <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={18}>
+                {data.top_commenters.map((_, i) => (
+                  <Cell
+                    key={i}
+                    fill={`rgba(59,130,246,${1 - i * 0.08})`}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
     </div>
   );
+
+  if (standalone) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-10">{content}</div>
+      </div>
+    );
+  }
+
+  return content;
 }

@@ -48,7 +48,7 @@ function HomeContent() {
               Global Search
             </Link>
             <Link
-              href="/?tab=stats"
+              href="/stats"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
             >
               <BarChart2 size={16} />

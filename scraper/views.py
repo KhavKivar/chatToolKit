@@ -206,7 +206,7 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
             .order_by('-ratio')[:10]
 
         # 4. Toxicity by Video
-        toxicity_by_video = qs.values('video__id', 'video__title')\
+        toxicity_by_video = qs.values('video__id', 'video__title', 'video__streamer_display_name')\
             .annotate(
                 total_count=Count('id'),
                 toxic_count=Count('id', filter=Q(is_toxic=True)),
