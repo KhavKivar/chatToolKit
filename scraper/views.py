@@ -228,12 +228,15 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
             )\
             .order_by('hour')
 
+        total_videos = qs.values('video__id').distinct().count()
+
         return Response({
             "top_commenters": list(top_commenters),
             "most_toxic_absolute": list(most_toxic_absolute),
             "most_toxic_relative": list(most_toxic_relative),
             "toxicity_by_video": list(toxicity_by_video),
-            "hourly_stats": list(hourly_stats)
+            "hourly_stats": list(hourly_stats),
+            "total_videos": total_videos,
         })
 
 
