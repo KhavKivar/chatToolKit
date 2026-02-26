@@ -48,6 +48,55 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+// Custom YAxis tick that renders title on line 1 and date on line 2
+function VideoYAxisTick({
+  x,
+  y,
+  payload,
+  tickColor,
+  dateColor,
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  x?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  y?: any;
+  payload?: { value: string };
+  tickColor: string;
+  dateColor: string;
+}) {
+  if (!payload) return null;
+  const parts = payload.value.split("\n");
+  const title = parts[0] ?? "";
+  const date = parts[1] ?? "";
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={date ? -5 : 0}
+        textAnchor="end"
+        dominantBaseline="middle"
+        fontSize={10}
+        fontWeight={500}
+        fill={tickColor}
+      >
+        {title}
+      </text>
+      {date && (
+        <text
+          x={0}
+          y={8}
+          textAnchor="end"
+          dominantBaseline="middle"
+          fontSize={9}
+          fill={dateColor}
+        >
+          {date}
+        </text>
+      )}
+    </g>
+  );
+}
+
 interface StatItem {
   commenter_login?: string;
   commenter_display_name?: string;
@@ -58,6 +107,7 @@ interface StatItem {
   video__title?: string;
   video__id?: string;
   video__streamer_display_name?: string;
+  video__created_at?: string;
   hour?: number;
 }
 
@@ -80,6 +130,7 @@ function useChartTheme() {
   return {
     isDark,
     tickColor: isDark ? "hsl(215, 15%, 60%)" : "hsl(215, 13%, 40%)",
+    dateColor: isDark ? "hsl(215, 12%, 45%)" : "hsl(215, 10%, 58%)",
     gridColor: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.07)",
     tooltipBg: isDark ? "#1c1c1e" : "#ffffff",
     tooltipBorder: isDark ? "#2e2e32" : "#e4e4e7",
@@ -232,17 +283,26 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
     ];
   }, [kpis]);
 
-  // Video data with streamer name in label
+  // Video data with streamer name + date in label
   const videoToxicityData = useMemo(() => {
     if (!data) return [];
     return data.toxicity_by_video.slice(0, 8).map((v) => {
       const streamer = v.video__streamer_display_name
         ? `[${v.video__streamer_display_name}] `
         : "";
-      const raw = `${streamer}${v.video__title ?? "Unknown"}`;
+      const date = v.video__created_at
+        ? new Date(v.video__created_at).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })
+        : null;
+      const fullTitle = `${streamer}${v.video__title ?? "Unknown"}`;
+      const truncated =
+        fullTitle.length > 22 ? fullTitle.substring(0, 19) + "…" : fullTitle;
       return {
-        title: raw.length > 24 ? raw.substring(0, 21) + "…" : raw,
-        fullTitle: raw,
+        title: date ? `${truncated}\n${date}` : truncated,
+        fullTitle: date ? `${fullTitle} · ${date}` : fullTitle,
         ratio: parseFloat((v.ratio ?? 0).toFixed(1)),
         total: v.total_count ?? 0,
         toxic: v.toxic_count ?? 0,
@@ -344,7 +404,128 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
         />
       </div>
 
-      {/* Row 1: Video Engagement vs Toxicity — FIRST, most important */}
+      {/* Row 1: Top Commenters | Most Toxic Volume | Highest Toxicity Rate */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Power Users */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Trophy size={16} className="text-yellow-500" />
+              Top Commenters
+            </CardTitle>
+            <CardDescription>Most messages sent overall</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data.top_commenters}
+                layout="vertical"
+                margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
+              >
+                <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={chart.gridColor} />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={tickProps} />
+                <YAxis
+                  dataKey="commenter_display_name"
+                  type="category"
+                  width={110}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={tickProps}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle(chart.isDark)}
+                  cursor={{ fill: chart.isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)" }}
+                  formatter={(v) => [Number(v).toLocaleString(), "Messages"]}
+                />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={18} fill="#3b82f6" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Most Toxic by Volume */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <AlertTriangle size={16} className="text-red-500" />
+              Most Toxic by Volume
+            </CardTitle>
+            <CardDescription>Highest count of flagged messages</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data.most_toxic_absolute}
+                layout="vertical"
+                margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
+              >
+                <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={chart.gridColor} />
+                <XAxis type="number" axisLine={false} tickLine={false} tick={tickProps} />
+                <YAxis
+                  dataKey="commenter_display_name"
+                  type="category"
+                  width={110}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={tickProps}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle(chart.isDark)}
+                  cursor={{ fill: "rgba(239,68,68,0.06)" }}
+                  formatter={(v) => [Number(v).toLocaleString(), "Toxic messages"]}
+                />
+                <Bar dataKey="toxic_count" radius={[0, 4, 4, 0]} barSize={18} fill="#ef4444" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Highest Toxicity Rate */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Skull size={16} className="text-orange-500" />
+              Highest Toxicity Rate
+            </CardTitle>
+            <CardDescription>% flagged per user (min 10 msgs)</CardDescription>
+          </CardHeader>
+          <CardContent className="h-[280px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data.most_toxic_relative}
+                layout="vertical"
+                margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
+              >
+                <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={chart.gridColor} />
+                <XAxis
+                  type="number"
+                  domain={[0, "auto"]}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={tickProps}
+                  tickFormatter={(v) => `${v}%`}
+                />
+                <YAxis
+                  dataKey="commenter_display_name"
+                  type="category"
+                  width={110}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={tickProps}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle(chart.isDark)}
+                  cursor={{ fill: "rgba(249,115,22,0.06)" }}
+                  formatter={(v) => [`${Number(v).toFixed(1)}%`, "Toxicity rate"]}
+                />
+                <Bar dataKey="ratio" radius={[0, 4, 4, 0]} barSize={18} fill="#f97316" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Row 2: Video Engagement vs Toxicity — with date on Y axis */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -356,7 +537,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
             most activity and how much was flagged
           </CardDescription>
         </CardHeader>
-        <CardContent className="h-[300px]">
+        <CardContent className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={videoToxicityData}
@@ -379,17 +560,21 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
               <YAxis
                 dataKey="title"
                 type="category"
-                width={145}
+                width={155}
                 axisLine={false}
                 tickLine={false}
-                tick={tickProps}
+                tick={(props) => (
+                  <VideoYAxisTick
+                    {...props}
+                    tickColor={chart.tickColor}
+                    dateColor={chart.dateColor}
+                  />
+                )}
               />
               <Tooltip
                 contentStyle={chartTooltipStyle(chart.isDark)}
                 cursor={{
-                  fill: chart.isDark
-                    ? "rgba(255,255,255,0.04)"
-                    : "rgba(0,0,0,0.04)",
+                  fill: chart.isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.04)",
                 }}
                 labelFormatter={(_, payload) =>
                   payload?.[0]
@@ -397,31 +582,15 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                     : ""
                 }
               />
-              <Legend
-                iconType="square"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11 }}
-              />
-              <Bar
-                dataKey="total"
-                name="Total msgs"
-                fill="#3b82f6"
-                radius={[0, 3, 3, 0]}
-                barSize={10}
-              />
-              <Bar
-                dataKey="toxic"
-                name="Toxic msgs"
-                fill="#ef4444"
-                radius={[0, 3, 3, 0]}
-                barSize={10}
-              />
+              <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="total" name="Total msgs" fill="#3b82f6" radius={[0, 3, 3, 0]} barSize={10} />
+              <Bar dataKey="toxic" name="Toxic msgs" fill="#ef4444" radius={[0, 3, 3, 0]} barSize={10} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Row 2: Toxicity Overview + Most Toxic Videos (ratio) */}
+      {/* Row 3: Toxicity Overview + Most Toxic Videos (ratio, auto-scaled) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Toxicity Overview Pie */}
         <Card>
@@ -430,9 +599,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
               <Flame size={16} className="text-orange-500" />
               Toxicity Overview
             </CardTitle>
-            <CardDescription>
-              Share of clean vs flagged messages
-            </CardDescription>
+            <CardDescription>Share of clean vs flagged messages</CardDescription>
           </CardHeader>
           <CardContent className="h-[260px] flex flex-col items-center justify-center gap-2">
             <ResponsiveContainer width="100%" height={200}>
@@ -453,16 +620,9 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                 </Pie>
                 <Tooltip
                   contentStyle={chartTooltipStyle(chart.isDark)}
-                  formatter={(val) => [
-                    Number(val).toLocaleString(),
-                    undefined,
-                  ]}
+                  formatter={(val) => [Number(val).toLocaleString(), undefined]}
                 />
-                <Legend
-                  iconType="circle"
-                  iconSize={8}
-                  wrapperStyle={{ fontSize: 11 }}
-                />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="text-center">
@@ -472,7 +632,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           </CardContent>
         </Card>
 
-        {/* Most Toxic Videos by ratio */}
+        {/* Most Toxic Videos — auto-scaled domain so bars are visible */}
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -495,7 +655,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                 />
                 <XAxis
                   type="number"
-                  domain={[0, 100]}
+                  domain={[0, "auto"]}
                   axisLine={false}
                   tickLine={false}
                   tick={tickProps}
@@ -504,10 +664,16 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                 <YAxis
                   dataKey="title"
                   type="category"
-                  width={145}
+                  width={155}
                   axisLine={false}
                   tickLine={false}
-                  tick={tickProps}
+                  tick={(props) => (
+                    <VideoYAxisTick
+                      {...props}
+                      tickColor={chart.tickColor}
+                      dateColor={chart.dateColor}
+                    />
+                  )}
                 />
                 <Tooltip
                   contentStyle={chartTooltipStyle(chart.isDark)}
@@ -517,40 +683,24 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                       ? (payload[0].payload as { fullTitle: string }).fullTitle
                       : ""
                   }
-                  formatter={(val) => [
-                    `${Number(val).toFixed(1)}%`,
-                    "Toxicity",
-                  ]}
+                  formatter={(val) => [`${Number(val).toFixed(1)}%`, "Toxicity"]}
                 />
-                <Bar
-                  dataKey="ratio"
-                  radius={[0, 4, 4, 0]}
-                  barSize={16}
-                  maxBarSize={20}
-                >
-                  {videoToxicityData.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={`rgba(139,92,246,${1 - i * 0.09})`}
-                    />
-                  ))}
-                </Bar>
+                <Bar dataKey="ratio" radius={[0, 4, 4, 0]} barSize={18} fill="#a855f7" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
       </div>
 
-      {/* Row 3: Top Commenters stacked (clean vs toxic) */}
+      {/* Row 4: Top Commenters stacked clean vs toxic */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <BarChart2 size={16} className="text-blue-500" />
-            Top Commenters — Clean vs Toxic
+            Top Commenters — Clean vs Toxic Breakdown
           </CardTitle>
           <CardDescription>
-            Message volume split by clean and flagged content for the most
-            active users
+            Message volume split by clean and flagged content for the most active users
           </CardDescription>
         </CardHeader>
         <CardContent className="h-[280px]">
@@ -560,17 +710,8 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
               layout="vertical"
               margin={{ left: 8, right: 32, top: 0, bottom: 0 }}
             >
-              <CartesianGrid
-                horizontal={false}
-                strokeDasharray="3 3"
-                stroke={chart.gridColor}
-              />
-              <XAxis
-                type="number"
-                axisLine={false}
-                tickLine={false}
-                tick={tickProps}
-              />
+              <CartesianGrid horizontal={false} strokeDasharray="3 3" stroke={chart.gridColor} />
+              <XAxis type="number" axisLine={false} tickLine={false} tick={tickProps} />
               <YAxis
                 dataKey="name"
                 type="category"
@@ -581,207 +722,11 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
               />
               <Tooltip
                 contentStyle={chartTooltipStyle(chart.isDark)}
-                cursor={{
-                  fill: chart.isDark
-                    ? "rgba(255,255,255,0.03)"
-                    : "rgba(0,0,0,0.03)",
-                }}
+                cursor={{ fill: chart.isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)" }}
               />
-              <Legend
-                iconType="square"
-                iconSize={8}
-                wrapperStyle={{ fontSize: 11 }}
-              />
-              <Bar
-                dataKey="clean"
-                name="Clean"
-                stackId="a"
-                fill="#3b82f6"
-                barSize={18}
-              />
-              <Bar
-                dataKey="toxic"
-                name="Toxic"
-                stackId="a"
-                fill="#ef4444"
-                radius={[0, 4, 4, 0]}
-                barSize={18}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Row 4: Toxicity Rate + Toxic Volume */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <Skull size={16} className="text-orange-500" />
-              Highest Toxicity Rate
-            </CardTitle>
-            <CardDescription>
-              Users with highest % of flagged messages (min 10 msgs)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data.most_toxic_relative}
-                layout="vertical"
-                margin={{ left: 8, right: 48, top: 0, bottom: 0 }}
-              >
-                <CartesianGrid
-                  horizontal={false}
-                  strokeDasharray="3 3"
-                  stroke={chart.gridColor}
-                />
-                <XAxis
-                  type="number"
-                  domain={[0, 100]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                  tickFormatter={(v) => `${v}%`}
-                />
-                <YAxis
-                  dataKey="commenter_display_name"
-                  type="category"
-                  width={110}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                />
-                <Tooltip
-                  contentStyle={chartTooltipStyle(chart.isDark)}
-                  cursor={{ fill: "rgba(249,115,22,0.06)" }}
-                  formatter={(v) => [
-                    `${Number(v).toFixed(1)}%`,
-                    "Toxicity rate",
-                  ]}
-                />
-                <Bar dataKey="ratio" radius={[0, 4, 4, 0]} barSize={18}>
-                  {data.most_toxic_relative.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={`rgba(249,115,22,${1 - i * 0.08})`}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-semibold flex items-center gap-2">
-              <AlertTriangle size={16} className="text-red-500" />
-              Most Toxic by Volume
-            </CardTitle>
-            <CardDescription>
-              Highest absolute count of flagged messages sent
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="h-[280px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={data.most_toxic_absolute}
-                layout="vertical"
-                margin={{ left: 8, right: 48, top: 0, bottom: 0 }}
-              >
-                <CartesianGrid
-                  horizontal={false}
-                  strokeDasharray="3 3"
-                  stroke={chart.gridColor}
-                />
-                <XAxis
-                  type="number"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                />
-                <YAxis
-                  dataKey="commenter_display_name"
-                  type="category"
-                  width={110}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={tickProps}
-                />
-                <Tooltip
-                  contentStyle={chartTooltipStyle(chart.isDark)}
-                  cursor={{ fill: "rgba(239,68,68,0.06)" }}
-                  formatter={(v) => [
-                    Number(v).toLocaleString(),
-                    "Toxic messages",
-                  ]}
-                />
-                <Bar dataKey="toxic_count" radius={[0, 4, 4, 0]} barSize={18}>
-                  {data.most_toxic_absolute.map((_, i) => (
-                    <Cell key={i} fill={`rgba(239,68,68,${1 - i * 0.08})`} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Row 5: Power Users */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Trophy size={16} className="text-yellow-500" />
-            Power Users
-          </CardTitle>
-          <CardDescription>
-            Most active community members by total message count
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="h-[280px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={data.top_commenters}
-              layout="vertical"
-              margin={{ left: 8, right: 48, top: 0, bottom: 0 }}
-            >
-              <CartesianGrid
-                horizontal={false}
-                strokeDasharray="3 3"
-                stroke={chart.gridColor}
-              />
-              <XAxis
-                type="number"
-                axisLine={false}
-                tickLine={false}
-                tick={tickProps}
-              />
-              <YAxis
-                dataKey="commenter_display_name"
-                type="category"
-                width={110}
-                axisLine={false}
-                tickLine={false}
-                tick={tickProps}
-              />
-              <Tooltip
-                contentStyle={chartTooltipStyle(chart.isDark)}
-                cursor={{
-                  fill: chart.isDark
-                    ? "rgba(255,255,255,0.04)"
-                    : "rgba(0,0,0,0.04)",
-                }}
-                formatter={(v) => [Number(v).toLocaleString(), "Messages"]}
-              />
-              <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={18}>
-                {data.top_commenters.map((_, i) => (
-                  <Cell
-                    key={i}
-                    fill={`rgba(59,130,246,${1 - i * 0.08})`}
-                  />
-                ))}
-              </Bar>
+              <Legend iconType="square" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="clean" name="Clean" stackId="a" fill="#3b82f6" barSize={18} />
+              <Bar dataKey="toxic" name="Toxic" stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} barSize={18} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
