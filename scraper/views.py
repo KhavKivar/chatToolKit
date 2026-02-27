@@ -205,19 +205,28 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
             )\
             .order_by('-ratio')[:10]
 
-        # 4. Toxicity by Video
-        toxicity_by_video = qs.values('video__id', 'video__title', 'video__streamer_display_name', 'video__created_at')\
+        # 4. Toxicity by Video & Engagement
+        toxicity_by_video = qs.values('video__id', 'video__title', 'video__streamer_display_name', 'video__created_at', 'video__length_seconds')\
             .annotate(
                 total_count=Count('id'),
                 toxic_count=Count('id', filter=Q(is_toxic=True)),
                 ratio=ExpressionWrapper(
                     Cast(F('toxic_count'), FloatField()) / Cast(F('total_count'), FloatField()) * 100,
                     output_field=FloatField()
+                ),
+                engagement_density=ExpressionWrapper(
+                    Cast(F('total_count'), FloatField()) / (Cast(Case(When(video__length_seconds__gt=0, then=F('video__length_seconds')), default=1, output_field=IntegerField()), FloatField()) / 60.0),
+                    output_field=FloatField()
                 )
             )\
             .order_by('-ratio')[:10]
 
-        # 5. Hourly Activity (Activity vs Toxicity by hour of day)
+        # 5. Top 5 Videos by total comments
+        top_videos_by_volume = qs.values('video__id', 'video__title', 'video__streamer_display_name', 'video__created_at')\
+            .annotate(total_count=Count('id'))\
+            .order_by('-total_count')[:5]
+
+        # 6. Hourly Activity (Activity vs Toxicity by hour of day)
         # We group by hour of the day to see when things get heated
         from django.db.models.functions import ExtractHour
         hourly_stats = qs.annotate(hour=ExtractHour('created_at'))\
@@ -235,6 +244,7 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
             "most_toxic_absolute": list(most_toxic_absolute),
             "most_toxic_relative": list(most_toxic_relative),
             "toxicity_by_video": list(toxicity_by_video),
+            "top_videos_by_volume": list(top_videos_by_volume),
             "hourly_stats": list(hourly_stats),
             "total_videos": total_videos,
         })
