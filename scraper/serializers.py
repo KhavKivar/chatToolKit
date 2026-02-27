@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask
+from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip
 
 class VideoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -50,4 +50,12 @@ class ClassificationTaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ClassificationTask
+        fields = '__all__'
+
+class ClipSerializer(serializers.ModelSerializer):
+    streamer_name = serializers.CharField(source='streamer.display_name', read_only=True)
+    video_title = serializers.CharField(source='video.title', read_only=True)
+
+    class Meta:
+        model = Clip
         fields = '__all__'

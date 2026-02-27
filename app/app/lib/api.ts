@@ -96,7 +96,9 @@ export const getClassificationTasks = async () => {
 };
 
 export const requeueClassification = async (videoId: string) => {
-  const response = await api.post("/classification-tasks/requeue/", { video_id: videoId });
+  const response = await api.post("/classification-tasks/requeue/", {
+    video_id: videoId,
+  });
   return response.data;
 };
 
