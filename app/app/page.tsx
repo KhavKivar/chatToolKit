@@ -13,9 +13,11 @@ import {
   Twitch,
   BarChart2,
   Loader2,
+  Clapperboard,
 } from "lucide-react";
 import Link from "next/link";
 import { StatsView } from "./components/StatsView";
+import { ClipsView } from "./components/ClipsView";
 
 import { Suspense } from "react";
 
@@ -54,6 +56,13 @@ function HomeContent() {
               <BarChart2 size={16} />
               Stats
             </Link>
+            <Link
+              href="/?tab=clips"
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2"
+            >
+              <Clapperboard size={16} />
+              Clips
+            </Link>
             <ModeToggle />
           </div>
         </div>
@@ -68,7 +77,7 @@ function HomeContent() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="flex items-center gap-4 mb-8">
-            <TabsList className="grid w-full max-w-[500px] grid-cols-3">
+            <TabsList className="grid w-full max-w-[580px] grid-cols-4">
               <TabsTrigger value="videos" className="flex items-center gap-2">
                 <LayoutDashboard size={16} /> Library
               </TabsTrigger>
@@ -80,6 +89,9 @@ function HomeContent() {
               </TabsTrigger>
               <TabsTrigger value="stats" className="flex items-center gap-2">
                 <BarChart2 size={16} /> Stats
+              </TabsTrigger>
+              <TabsTrigger value="clips" className="flex items-center gap-2">
+                <Clapperboard size={16} /> Clips
               </TabsTrigger>
             </TabsList>
             <Link href="/search">
@@ -100,6 +112,10 @@ function HomeContent() {
 
           <TabsContent value="stats">
             <StatsView />
+          </TabsContent>
+
+          <TabsContent value="clips">
+            <ClipsView />
           </TabsContent>
         </Tabs>
       </main>
