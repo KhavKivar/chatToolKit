@@ -644,6 +644,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                 dataKey="title"
                 type="category"
                 width={155}
+                interval={0}
                 axisLine={false}
                 tickLine={false}
                 tick={(props) => (
@@ -742,7 +743,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
               Top 10 VODs by total message count
             </CardDescription>
           </CardHeader>
-          <CardContent className="h-[260px]">
+          <CardContent className="h-[400px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={topVideosVolumeData}
@@ -764,6 +765,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                   dataKey="title"
                   type="category"
                   width={155}
+                  interval={0}
                   axisLine={false}
                   tickLine={false}
                   tick={(props) => (
