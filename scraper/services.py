@@ -147,7 +147,7 @@ class TwitchScraperService:
                 res_headers = self._parse_headers(f.read())
             body = json.loads(proc.stdout)
             
-            self.integrity_token = body.get("token")
+            self.integrity_token = (body or {}).get("token")
             self.kpsdk_ct = res_headers.get("x-kpsdk-ct")
             self.kpsdk_r = res_headers.get("x-kpsdk-r")
         finally:
@@ -183,15 +183,15 @@ class TwitchScraperService:
     def fetch_streamer_info(self, login: str) -> Optional[Dict]:
         self.refresh_integrity()
         res = self.fetch_gql({"login": login}, query=GQL_USER_QUERY, operation_name="GetUser")
-        return res.get("data", {}).get("user")
+        return (res.get("data") or {}).get("user")
 
     def fetch_streamer_vods(self, login: str, limit: int = 20) -> List[Dict]:
         self.refresh_integrity()
         res = self.fetch_gql({"login": login, "limit": limit, "cursor": None}, query=GQL_USER_VIDEOS_QUERY, operation_name="GetUserVideos")
-        user_data = res.get("data", {}).get("user")
+        user_data = (res.get("data") or {}).get("user")
         if not user_data: return []
         
-        edges = user_data.get("videos", {}).get("edges", [])
+        edges = (user_data.get("videos") or {}).get("edges", [])
         return [e.get("node") for e in edges if e.get("node")]
 
     def _get_cookies(self) -> Dict:
@@ -238,7 +238,7 @@ class TwitchScraperService:
             if limit_pages and page >= limit_pages: break
             
             res = self.fetch_gql({"videoID": video_id, "cursor": None, "contentOffsetSeconds": offset})
-            data = res.get("data", {}).get("video")
+            data = (res.get("data") or {}).get("video")
             if not data:
                 print(f"Video {video_id} not found or error occurred.")
                 break
