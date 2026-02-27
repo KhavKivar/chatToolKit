@@ -240,8 +240,7 @@ class TwitchScraperService:
             res = self.fetch_gql({"videoID": video_id, "cursor": None, "contentOffsetSeconds": offset})
             data = (res.get("data") or {}).get("video")
             if not data:
-                print(f"Video {video_id} not found or error occurred.")
-                break
+                raise ValueError(f"Video {video_id} not found on Twitch (it may have been deleted or expired).")
             
             if not video_obj:
                 length_seconds = data.get("lengthSeconds") or 0
