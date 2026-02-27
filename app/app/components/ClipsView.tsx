@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { Clapperboard, Sparkles, Clock, Play } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Clapperboard, Sparkles, MonitorPlay, Share2 } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -9,8 +9,35 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { getClips } from "../lib/api";
+
+interface ClipItem {
+  id: string;
+  title: string;
+  youtube_url: string;
+  youtube_video_id: string;
+  streamladder_id: string;
+  streamer_name: string;
+  video_title: string;
+  created_at: string;
+}
 
 export function ClipsView() {
+  const [clips, setClips] = useState<ClipItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getClips()
+      .then((res) => {
+        // Handle both paginated and flat responses
+        const data = res.results || res;
+        setClips(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => console.error("Failed to fetch clips:", err))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b">
@@ -20,78 +47,119 @@ export function ClipsView() {
             className="mb-2 gap-1.5 text-xs bg-purple-500/10 text-purple-500 border-purple-500/20"
           >
             <Sparkles size={11} />
-            AI Powered
+            AI Highlights
           </Badge>
           <h2 className="text-3xl font-bold tracking-tight">
             AI Generated Clips
           </h2>
           <p className="text-sm text-muted-foreground max-w-md">
-            Highlights and viral moments automatically extracted and formatted
-            using Streamladder.
+            Viral moments extracted via chat analysis and formatted using
+            Streamladder.
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Placeholder / Coming Soon Card for now */}
-        <Card className="border-dashed bg-muted/30 flex flex-col items-center justify-center py-12 text-center col-span-full">
-          <div className="bg-primary/10 p-4 rounded-full mb-4">
-            <Clapperboard size={32} className="text-primary" />
-          </div>
-          <CardTitle className="mb-2">No clips ready yet</CardTitle>
-          <CardDescription className="max-w-sm px-4">
-            The AI is currently processing recent VODs to identify
-            high-engagement moments. Clips will appear here as they are
-            generated.
-          </CardDescription>
-          <div className="mt-6 flex items-center gap-2 text-xs font-semibold text-muted-foreground bg-background px-3 py-1.5 rounded-full border">
-            <Sparkles size={12} className="text-yellow-500" />
-            POWERED BY STREAMLADDER AI
-          </div>
-        </Card>
-
-        {/* Example of what a clip card might look like later */}
-        <Card className="overflow-hidden group opacity-50 grayscale pointer-events-none">
-          <div className="aspect-9/16 bg-black relative flex items-center justify-center">
-            <Play size={48} className="text-white/20" />
-            <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-transparent" />
-            <div className="absolute bottom-4 left-4 right-4">
-              <Badge className="bg-purple-600 mb-2">Example Format</Badge>
-              <h3 className="text-white font-bold truncate">Viral Moment #1</h3>
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="aspect-9/16 rounded-xl" />
+          ))
+        ) : clips.length > 0 ? (
+          clips.map((clip) => (
+            <Card
+              key={clip.id}
+              className="overflow-hidden border-none bg-muted/20 group hover:ring-2 hover:ring-primary/20 transition-all"
+            >
+              <div className="aspect-9/16 bg-black relative">
+                {clip.youtube_video_id ? (
+                  <iframe
+                    className="w-full h-full"
+                    src={`https://www.youtube.com/embed/${clip.youtube_video_id}?autoplay=0&rel=0`}
+                    title={clip.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <div className="flex flex-col items-center gap-2">
+                      <MonitorPlay
+                        size={40}
+                        className="text-muted-foreground opacity-20"
+                      />
+                      <span className="text-[10px] text-muted-foreground font-medium">
+                        Draft - Pending YouTube Upload
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <CardContent className="p-4 space-y-3">
+                <div className="space-y-1">
+                  <h3 className="font-bold text-sm line-clamp-2">
+                    {clip.title}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground truncate uppercase font-bold tracking-wider">
+                    {clip.streamer_name} · {clip.video_title}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-primary/5">
+                  <Badge
+                    variant="secondary"
+                    className="text-[9px] bg-primary/5 text-primary border-none"
+                  >
+                    SL ID: {clip.streamladder_id?.substring(0, 8)}...
+                  </Badge>
+                  {clip.youtube_url && (
+                    <a
+                      href={clip.youtube_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      <Share2 size={14} />
+                    </a>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : (
+          <Card className="border-dashed bg-muted/30 flex flex-col items-center justify-center py-16 text-center col-span-full">
+            <div className="bg-primary/10 p-5 rounded-full mb-4">
+              <Clapperboard size={40} className="text-primary" />
             </div>
-          </div>
-          <CardContent className="p-4 bg-card">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Clock size={12} /> 0:30s
-              </span>
-              <span className="flex items-center gap-1">
-                Processed <Sparkles size={12} className="text-yellow-500" />
-              </span>
+            <CardTitle className="mb-2">No clips available</CardTitle>
+            <CardDescription className="max-w-xs mx-auto">
+              Ready to process VODs. When engagement spikes are detected, clips
+              will be sent to Streamladder and then mirrored here from YouTube.
+            </CardDescription>
+            <div className="mt-8 flex items-center gap-2 text-xs font-bold text-muted-foreground/60 bg-muted/40 px-4 py-2 rounded-full">
+              <Sparkles size={14} className="text-yellow-500/80" />
+              INTEGRATION: STREAMLADDER + YOUTUBE
             </div>
-          </CardContent>
-        </Card>
+          </Card>
+        )}
       </div>
 
-      <div className="bg-blue-500/5 border border-blue-500/20 rounded-xl p-6 flex flex-col md:flex-row items-center gap-6 justify-between mt-10">
-        <div className="space-y-1">
-          <h3 className="font-bold flex items-center gap-2">
-            <Sparkles size={18} className="text-blue-500" />
-            AI Clip Strategy
+      <div className="bg-linear-to-br from-primary/5 to-purple-500/5 border border-primary/10 rounded-2xl p-8 flex flex-col md:flex-row items-center gap-8 justify-between mt-12">
+        <div className="space-y-2">
+          <h3 className="font-bold text-xl flex items-center gap-2">
+            <Sparkles size={22} className="text-purple-500" />
+            Engagement-Driven Clips
           </h3>
-          <p className="text-sm text-muted-foreground">
-            We use engagement density statistics to find spikes in chat activity
-            and send those timeframes to Streamladder for automatic conversion
-            into vertical clips.
+          <p className="text-sm text-muted-foreground max-w-xl">
+            Our algorithm scans chat activity for "W", "LUL", and hype moments.
+            Once a peak is found, the timeframe is sent to Streamladder for
+            vertical formatting and then prepared for YouTube Shorts.
           </p>
         </div>
-        <div className="flex shrink-0 gap-3">
-          <Badge
-            variant="secondary"
-            className="bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border-none px-3 py-1 text-[10px] tracking-widest uppercase font-bold"
-          >
-            Chat Analysis Active
+        <div className="flex flex-col gap-2 shrink-0 items-end">
+          <Badge className="bg-emerald-500/10 text-emerald-500 border-none px-4 py-1.5 text-[11px] font-black uppercase tracking-tighter">
+            System Online
           </Badge>
+          <span className="text-[10px] text-muted-foreground/50 font-medium">
+            Auto-scan every 10 mins
+          </span>
         </div>
       </div>
     </div>

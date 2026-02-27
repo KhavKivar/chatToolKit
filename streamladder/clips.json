@@ -1,20 +1,6 @@
 [
   {
-    "title": "Midweek Crisis Test Clip",
-    "score": 100,
-    "hook": "Test clip",
-    "hashtags": [],
-    "streamer": "mcintyre",
-    "vod_id": "2707374979",
-    "twitch_vod_url": "https://www.twitch.tv/videos/2707374979?t=0h0m30s",
-    "start_time_sec": 30,
-    "end_time_sec": 60,
-    "duration_sec": 30,
-    "start_fmt": "0h0m30s",
-    "end_fmt": "0h1m0s",
-    "status": "test"
-  },
-  {
+    "id": "00193734-4e2e-46ea-bb5f-977a4d3349f3",
     "title": "Shigity's HOA Rebellion: Kicking Out the Incumbents!",
     "score": 95,
     "hook": "Shigity shares the epic tale of his HOA's 'rebellion' where long-standing 'incumbents' were finally voted out!",
@@ -28,6 +14,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/1742-1777/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=0h29m2s",
     "start_time_sec": 1742,
     "end_time_sec": 1777,
@@ -37,6 +24,7 @@
     "status": "succeeded"
   },
   {
+    "id": "5b077e7a-b7e6-4266-8a8d-bad2a845e408",
     "title": "Shigity Falls for the Classic \"Room 4 D's Nuts\" Joke!",
     "score": 95,
     "hook": "Watch Shigity's hilarious reaction as chat tries to pull a fast one with a classic internet joke! Did he fall for it?",
@@ -51,6 +39,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/29729-29798/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h15m29s",
     "start_time_sec": 29729,
     "end_time_sec": 29798,
@@ -60,6 +49,7 @@
     "status": "succeeded"
   },
   {
+    "id": "8fa1f2dd-3dd8-43de-bdd2-c86021be5ca7",
     "title": "Shigity's 3-Day TFT Masterclass: Is He Lying?!",
     "score": 95,
     "hook": "Shigity breaks down complex TFT comps like a seasoned veteran, then drops a bombshell: he's only been playing for three days! Is this a genius strategy or just pure talent?",
@@ -73,6 +63,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/31321-31425/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h42m1s",
     "start_time_sec": 31321,
     "end_time_sec": 31425,
@@ -82,6 +73,7 @@
     "status": "succeeded"
   },
   {
+    "id": "a43bd505-7a0b-450c-a06d-1781c5793488",
     "title": "Shigity's New Year Unban: Who Has Potential for 2026?",
     "score": 95,
     "hook": "Shigity is considering unbanning a controversial viewer for the New Year! He's looking for someone with 'potential for 2026.' Can you guess who it is?",
@@ -94,6 +86,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/4309-4397/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h11m49s",
     "start_time_sec": 4309,
     "end_time_sec": 4397,
@@ -103,6 +96,7 @@
     "status": "succeeded"
   },
   {
+    "id": "027074ef-9368-41fa-9813-2450b07f2fb9",
     "title": "Shigity's Strong Stance: Why He's Anti-Porn",
     "score": 92,
     "hook": "Shigity shares his strong, personal reasons for being anti-porn, citing its impact on marriages and lives. A powerful and unexpected take!",
@@ -115,6 +109,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/24335-24356/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h45m35s",
     "start_time_sec": 24335,
     "end_time_sec": 24356,
@@ -124,6 +119,7 @@
     "status": "succeeded"
   },
   {
+    "id": "7036fae8-8669-4a6e-8728-c26286ba9634",
     "title": "Shigity's Secret OP TFT Augment for Easy Wins!",
     "score": 92,
     "hook": "Shigity reveals an incredibly OP TFT augment that guarantees game-over wins if you get it early: +2 team size with double damage! Is this the ultimate strat?",
@@ -137,6 +133,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/7658-7692/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h7m38s",
     "start_time_sec": 7658,
     "end_time_sec": 7692,
@@ -146,6 +143,7 @@
     "status": "succeeded"
   },
   {
+    "id": "baa65494-7f8d-4486-b527-42c5824640e9",
     "title": "Shigity's Wild Food Concoction Ideas!",
     "score": 92,
     "hook": "Shigity asks chat for their homemade food concoctions and shares his own wild idea: peach yogurt, milk, oats, and coffee!",
@@ -159,6 +157,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/2196-2229/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=0h36m36s",
     "start_time_sec": 2196,
     "end_time_sec": 2229,
@@ -168,6 +167,7 @@
     "status": "succeeded"
   },
   {
+    "id": "0415be3a-617d-4fbd-94e0-0bce2fc48bf9",
     "title": "Shigity's Wild 7-Eleven Sidewalk Story!",
     "score": 92,
     "hook": "You won't believe what Shigity saw walking out of 7-Eleven! This unexpected story will leave you wondering.",
@@ -180,6 +180,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/18369-18392/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h6m9s",
     "start_time_sec": 18369,
     "end_time_sec": 18392,
@@ -189,6 +190,7 @@
     "status": "succeeded"
   },
   {
+    "id": "8840b1e6-7b5d-4619-be94-aa362be61aa6",
     "title": "New Year's Terrorists on My Team?!",
     "score": 92,
     "hook": "What do you guys think the chances are that Shigity's wild theory about his teammates being 'terrorists' with no New Year's plans is true?",
@@ -201,6 +203,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/20746-20780/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h45m46s",
     "start_time_sec": 20746,
     "end_time_sec": 20780,
@@ -210,6 +213,7 @@
     "status": "succeeded"
   },
   {
+    "id": "96bc20eb-478a-418f-a822-b8d1f8029b54",
     "title": "Shigity Breaks Down a Godly Play & Roasts a Hero!",
     "score": 92,
     "hook": "Watch Shigity analyze an incredible in-game play, then deliver a spicy take on why 'purple asthma is not that good, bro!'",
@@ -223,6 +227,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/16657-16719/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h37m37s",
     "start_time_sec": 16657,
     "end_time_sec": 16719,
@@ -232,6 +237,7 @@
     "status": "succeeded"
   },
   {
+    "id": "ef7c6718-a4b4-4660-afdc-b59c153103fc",
     "title": "Shigity's Wild IRL Stream Ideas: 100 Nuggets?!",
     "score": 92,
     "hook": "Shigity shares his hilarious and ambitious ideas for future IRL food challenges, from 100 nuggets to 20 tacos!",
@@ -246,6 +252,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/13768-13838/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=3h49m28s",
     "start_time_sec": 13768,
     "end_time_sec": 13838,
@@ -255,6 +262,7 @@
     "status": "succeeded"
   },
   {
+    "id": "42c5842c-6c4a-4fe9-a6c2-2f08babe3f5a",
     "title": "Shigity's Friend Dines with Meg Whitman (Ex-eBay CEO)!",
     "score": 90,
     "hook": "Shigity shares a surprising anecdote about his friend, a neurosurgeon, who regularly dines with the former CEO of eBay and HP, Meg Whitman!",
@@ -269,6 +277,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/6764-6865/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h52m44s",
     "start_time_sec": 6764,
     "end_time_sec": 6865,
@@ -278,6 +287,7 @@
     "status": "succeeded"
   },
   {
+    "id": "c1ece33d-1b59-4262-b83a-d4a4bf777fc6",
     "title": "Mobile TFT Fail: Shigity Sells 2-Star Lucian!",
     "score": 90,
     "hook": "You won't believe how Shigity lost second place in TFT! A simple mobile UI mistake led to him accidentally selling a 2-star Lucian at the worst possible moment.",
@@ -291,6 +301,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/8176-8204/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h16m16s",
     "start_time_sec": 8176,
     "end_time_sec": 8204,
@@ -300,6 +311,7 @@
     "status": "succeeded"
   },
   {
+    "id": "0dfb8283-b7ff-4c17-a7be-9ea21fc2d991",
     "title": "Shigity's 'Greeting' Strategy & Busted Map Objective!",
     "score": 90,
     "hook": "Join Shigity as he hilariously explains the 'cost of greeting' in-game and reveals a 'busted' map objective that guarantees a win!",
@@ -313,6 +325,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/16254-16353/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h30m54s",
     "start_time_sec": 16254,
     "end_time_sec": 16353,
@@ -322,6 +335,7 @@
     "status": "succeeded"
   },
   {
+    "id": "14f03976-c8e7-491a-908b-e4198434dafc",
     "title": "Shigity Forgets His Character Can HEAL?! Plus a Loki Joke!",
     "score": 90,
     "hook": "Shigity has a hilarious realization about his character's abilities mid-game, followed by a classic Loki joke with chat!",
@@ -336,6 +350,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/11972-12022/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=3h19m32s",
     "start_time_sec": 11972,
     "end_time_sec": 12022,
@@ -345,6 +360,7 @@
     "status": "succeeded"
   },
   {
+    "id": "1f430309-0bf5-4d75-b920-b300e86699a2",
     "title": "Shigity on LeBron's 'Ring Hopping' Strategy!",
     "score": 90,
     "hook": "Shigity shares his spicy take on LeBron James' career moves and whether he's 'ring hopping'!",
@@ -359,6 +375,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/35544-35564/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=9h52m24s",
     "start_time_sec": 35544,
     "end_time_sec": 35564,
@@ -368,6 +385,7 @@
     "status": "succeeded"
   },
   {
+    "id": "4aa75ded-0fcd-4b15-a7ed-7af8ce9ca070",
     "title": "Shigity Can't Handle This Cringe Gameplay!",
     "score": 90,
     "hook": "Watch Shigity's hilarious and exasperated reaction to some truly 'cringe' gameplay. You won't believe what he sees!",
@@ -380,6 +398,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/4038-4057/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h7m18s",
     "start_time_sec": 4038,
     "end_time_sec": 4057,
@@ -389,6 +408,7 @@
     "status": "succeeded"
   },
   {
+    "id": "802add49-0f2b-46e4-a7d6-bdec0d219276",
     "title": "Shigity's Brutal Hunger Advice!",
     "score": 90,
     "hook": "Watch Shigity give some hilariously blunt advice to a hungry viewer who can't find a snack!",
@@ -401,6 +421,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/464-512/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=0h7m44s",
     "start_time_sec": 464,
     "end_time_sec": 512,
@@ -410,6 +431,7 @@
     "status": "succeeded"
   },
   {
+    "id": "81bc451d-2ad3-4f85-a4a4-d73b468b681b",
     "title": "Shigity: The Cool Boomer Parent Staying Upstairs!",
     "score": 90,
     "hook": "Ever been the 'cool parent' avoiding a party downstairs? Shigity perfectly describes his New Year's Eve situation!",
@@ -422,6 +444,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/18798-18816/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h13m18s",
     "start_time_sec": 18798,
     "end_time_sec": 18816,
@@ -431,6 +454,7 @@
     "status": "succeeded"
   },
   {
+    "id": "9c3b9ef0-1aa0-479b-8909-7adad79f16c3",
     "title": "Shigity Refuses to Play With THIS Teammate!",
     "score": 90,
     "hook": "Shigity declares he won't play with a specific teammate, then hilariously rules out who it isn't!",
@@ -443,6 +467,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/20637-20673/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h43m57s",
     "start_time_sec": 20637,
     "end_time_sec": 20673,
@@ -452,6 +477,7 @@
     "status": "succeeded"
   },
   {
+    "id": "9e8ff99f-f704-4294-a253-01bbf34f0fab",
     "title": "Shigity's \"Alternative Social Media Site\" Explanation!",
     "score": 90,
     "hook": "Shigity gets defensive and hilariously explains his 'alternative social media site' after chat's teasing!",
@@ -464,6 +490,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/27621-27667/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=7h40m21s",
     "start_time_sec": 27621,
     "end_time_sec": 27667,
@@ -473,6 +500,7 @@
     "status": "succeeded"
   },
   {
+    "id": "d8fcbc88-e260-4439-8fe0-8171e5fd1078",
     "title": "When Shigity, the Healer, Forgets His Job!",
     "score": 90,
     "hook": "Shigity, playing a healer, hilariously admits he forgot he could heal because he was \"too busy pumping\"!",
@@ -486,6 +514,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/12364-12386/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=3h26m4s",
     "start_time_sec": 12364,
     "end_time_sec": 12386,
@@ -495,6 +524,7 @@
     "status": "succeeded"
   },
   {
+    "id": "e7e99974-1186-4e20-a703-54ec3085ce86",
     "title": "Who Caused Shigity's BIGGEST Loss Streak?",
     "score": 90,
     "hook": "Shigity answers a spicy question from chat: Which player caused his biggest loss streak? You won't believe his answer!",
@@ -508,6 +538,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/22937-22986/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h22m17s",
     "start_time_sec": 22937,
     "end_time_sec": 22986,
@@ -517,6 +548,7 @@
     "status": "succeeded"
   },
   {
+    "id": "0901c93c-0369-48a8-92a9-0114e8cb748b",
     "title": "Am I Mom's Favorite? Shigity Asks the Hard Question!",
     "score": 89,
     "hook": "Shigity gets real about asking his mom if he's her favorite child at Christmas, and her hilariously non-committal answer!",
@@ -529,6 +561,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/24533-24580/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h48m53s",
     "start_time_sec": 24533,
     "end_time_sec": 24580,
@@ -538,6 +571,7 @@
     "status": "succeeded"
   },
   {
+    "id": "866e51e0-4be4-4f98-bfe4-47946dab3acb",
     "title": "Shigity Gets Humbled by Chat!",
     "score": 88,
     "hook": "Shigity gets 'humbled' by a viewer in chat and responds with some playful, spicy banter!",
@@ -550,6 +584,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h59m15s",
     "start_time_sec": 21555,
     "end_time_sec": 21579,
@@ -559,6 +594,7 @@
     "status": "failed"
   },
   {
+    "id": "162cfdf9-b166-4407-b9f2-407cb2615241",
     "title": "\"I'm F***ing Dead, Bro!\" Shigity's Instant Regret",
     "score": 88,
     "hook": "Shigity's quick death and immediate self-reflection on a missed opportunity. We've all been there!",
@@ -573,6 +609,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h5m21s",
     "start_time_sec": 29121,
     "end_time_sec": 29152,
@@ -582,6 +619,7 @@
     "status": "failed"
   },
   {
+    "id": "057cbbaa-bd4d-4ea6-af68-ba1924292006",
     "title": "Shigity Calls Out His 'Rambunctious Chatter'!",
     "score": 88,
     "hook": "Shigity gets asked to name his most 'rambunctious chatter' and delivers a hilarious, age-related jab! Is it you?",
@@ -595,6 +633,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h35m15s",
     "start_time_sec": 23715,
     "end_time_sec": 23770,
@@ -604,6 +643,7 @@
     "status": "failed"
   },
   {
+    "id": "424603cb-d78a-4d44-96b2-79e88ddb8f7f",
     "title": "Shigity's New Year's Eve Plans (or Lack Thereof)",
     "score": 88,
     "hook": "Find out why Shigity won't be counting down New Year's on stream and his hilarious plan to avoid a family party!",
@@ -617,6 +657,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h40m10s",
     "start_time_sec": 16810,
     "end_time_sec": 16841,
@@ -626,6 +667,7 @@
     "status": "failed"
   },
   {
+    "id": "84fb3ad2-bbb4-4e17-a839-474856640f14",
     "title": "Shigity's Unspeakable Streamer Drama of 2025!",
     "score": 88,
     "hook": "Shigity teases a massive, unspeakable drama from 2025 that he can't even talk about on stream! What could it be?",
@@ -638,6 +680,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h41m33s",
     "start_time_sec": 24093,
     "end_time_sec": 24133,
@@ -647,6 +690,7 @@
     "status": "failed"
   },
   {
+    "id": "2a16ee68-dc6b-4d73-ba24-159a0fc23a27",
     "title": "Shigity's Unlucky TFT Augment Roll!",
     "score": 88,
     "hook": "Watch Shigity's disbelief as he gets the worst possible augment roll in TFT!",
@@ -660,6 +704,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=9h44m7s",
     "start_time_sec": 35047,
     "end_time_sec": 35079,
@@ -669,6 +714,7 @@
     "status": "failed"
   },
   {
+    "id": "7415e45f-695a-4bd4-a5f0-dcf1b008ec81",
     "title": "Shigity's Gamer Life: Talking Patches at Parties!",
     "score": 88,
     "hook": "Shigity perfectly captures the struggle of being a gamer at a non-gamer party. Who else loves talking about patch notes?",
@@ -681,6 +727,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h12m39s",
     "start_time_sec": 18759,
     "end_time_sec": 18780,
@@ -690,6 +737,7 @@
     "status": "failed"
   },
   {
+    "id": "859024e4-c523-48db-9239-6f46f79695a2",
     "title": "Banned for Being Friendly?! Shigity's Wild Social Media Story",
     "score": 88,
     "hook": "Shigity shares a wild and unbelievable story about getting insta-banned on a social platform just for trying to be friendly!",
@@ -702,6 +750,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=7h38m40s",
     "start_time_sec": 27520,
     "end_time_sec": 27577,
@@ -711,6 +760,7 @@
     "status": "failed"
   },
   {
+    "id": "3512f8f8-4a50-45e2-855f-e002dd159757",
     "title": "Shigity's New Year's Binge-Watch List!",
     "score": 88,
     "hook": "Think there's nothing to watch? Shigity shares his New Year's binge-watch plans, including Arcane and Young Sheldon!",
@@ -724,6 +774,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/852-874/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=0h14m12s",
     "start_time_sec": 852,
     "end_time_sec": 874,
@@ -733,6 +784,7 @@
     "status": "succeeded"
   },
   {
+    "id": "a9c9f159-f70e-4598-9527-b69c05772673",
     "title": "Shigity Denies Being a Ragnaros Abuser & Admits KTZ Struggles!",
     "score": 88,
     "hook": "Is Shigity a Ragnaros abuser? He defends his honor, then hilariously admits his KTZ gameplay was so bad he was \"feeding\" and his team was carrying him!",
@@ -747,6 +799,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/5730-5845/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h35m30s",
     "start_time_sec": 5730,
     "end_time_sec": 5845,
@@ -756,6 +809,7 @@
     "status": "succeeded"
   },
   {
+    "id": "c77ae1c8-bac1-40ff-8518-64de6e32e60d",
     "title": "Shigity's Philosophy: Can the 'Borderline Offended' Be Reformed?",
     "score": 88,
     "hook": "Shigity shares his unique philosophy on unbanning viewers: focusing on those who 'borderline offended' but 'can possibly be reformed.' Do you agree with his approach?",
@@ -768,6 +822,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/4447-4519/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h14m7s",
     "start_time_sec": 4447,
     "end_time_sec": 4519,
@@ -777,6 +832,7 @@
     "status": "succeeded"
   },
   {
+    "id": "cc77d3a1-f08a-43ad-a054-800bd1edc5fd",
     "title": "Shigity's Undying Love for Yordles in TFT!",
     "score": 88,
     "hook": "Shigity confesses his absolute obsession with Yordles in TFT, revealing how he managed to dominate with a Priz 10 Yordle comp even as a new player!",
@@ -790,6 +846,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/7330-7400/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h2m10s",
     "start_time_sec": 7330,
     "end_time_sec": 7400,
@@ -799,6 +856,7 @@
     "status": "succeeded"
   },
   {
+    "id": "dae23f1d-d127-4f3a-9b96-aa1005b4f502",
     "title": "Shigity's Controversial Take on TFT Set 9.5",
     "score": 88,
     "hook": "Despite hearing others call it 'one of the worst,' Shigity, a returning player from Season 3, actually enjoys the current TFT set. Hear his surprising take and why he likes it!",
@@ -812,6 +870,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=9h11m11s",
     "start_time_sec": 33071,
     "end_time_sec": 33143,
@@ -821,6 +880,7 @@
     "status": "failed"
   },
   {
+    "id": "10acf630-6303-4871-81b7-5018b0229804",
     "title": "Shigity: The DPS Ana Experience!",
     "score": 88,
     "hook": "Shigity admits to being a \"DPS Ana\" and tries his best to heal, but sometimes damage is just more fun!",
@@ -834,6 +894,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/12067-12120/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=3h21m7s",
     "start_time_sec": 12067,
     "end_time_sec": 12120,
@@ -843,6 +904,7 @@
     "status": "succeeded"
   },
   {
+    "id": "1edd284e-4391-4d86-98dc-852861e34d13",
     "title": "Shigity's Spicy Take on US Healthcare!",
     "score": 88,
     "hook": "Shigity drops a bold statement about US healthcare and how he plans to avoid needing it. Do you agree?",
@@ -856,6 +918,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": "https://medium-storage.streamladder.com/twitch-vod/2657947016/10065-10082/video.mp4",
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h47m45s",
     "start_time_sec": 10065,
     "end_time_sec": 10082,
@@ -865,6 +928,7 @@
     "status": "succeeded"
   },
   {
+    "id": "114ac6e0-936d-408a-9b90-98cfff6a8a99",
     "title": "Shigity's Controversial Boba Takes: Watermelon is a NO!",
     "score": 85,
     "hook": "What's your go-to boba flavor? Shigity is laying down his definitive list, and his take on watermelon might just shock you!",
@@ -879,6 +943,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h40m2s",
     "start_time_sec": 9602,
     "end_time_sec": 9701,
@@ -888,6 +953,7 @@
     "status": "failed"
   },
   {
+    "id": "90c5812e-f40b-479c-a41e-a2866aa05b06",
     "title": "Copyright Scare! Shigity's Hilarious Reaction to Background Noise",
     "score": 85,
     "hook": "Shigity's hilarious panic as he fears a copyright strike from his family watching Stranger Things in the background!",
@@ -900,6 +966,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=7h34m44s",
     "start_time_sec": 27284,
     "end_time_sec": 27328,
@@ -909,6 +976,7 @@
     "status": "failed"
   },
   {
+    "id": "9f31fb2c-bcf1-4e23-ac00-0788328e7d1c",
     "title": "Shigity's Plea: \"Please Stop Trying to Get My Feet Pics Bro!\"",
     "score": 85,
     "hook": "Shigity has a hilarious and direct message for his chat about their unusual requests!",
@@ -921,6 +989,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=7h57m9s",
     "start_time_sec": 28629,
     "end_time_sec": 28644,
@@ -930,6 +999,7 @@
     "status": "failed"
   },
   {
+    "id": "69bdaefb-de10-4f51-b39c-13f9116bf0c1",
     "title": "Shigity's Spicy LeBron Take & Warriors Trash Talk!",
     "score": 85,
     "hook": "Shigity drops a controversial take on LeBron's team choices and throws some shade at the Golden State Warriors. Do you agree with his hot take?",
@@ -943,6 +1013,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=0h52m56s",
     "start_time_sec": 3176,
     "end_time_sec": 3202,
@@ -952,6 +1023,7 @@
     "status": "failed"
   },
   {
+    "id": "8978e28d-954c-4d0f-aa42-0b3b0278b7ab",
     "title": "Shigity's Epic Rant: The Worst Team Comp Ever!",
     "score": 85,
     "hook": "Shigity breaks down a truly disastrous team composition from his last game. Every gamer can relate to this frustration!",
@@ -964,6 +1036,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h59m26s",
     "start_time_sec": 17966,
     "end_time_sec": 17994,
@@ -973,6 +1046,7 @@
     "status": "failed"
   },
   {
+    "id": "57f35671-ef65-479b-89a0-abe407f1f1e3",
     "title": "Shigity's Unwritten Rule for \"Weird\" Chatters!",
     "score": 85,
     "hook": "Ever wonder how streamers deal with genuinely weird people in chat? Shigity lays down an unwritten rule after getting \"burned a few times.\"",
@@ -986,6 +1060,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h21m33s",
     "start_time_sec": 4893,
     "end_time_sec": 4960,
@@ -995,6 +1070,7 @@
     "status": "failed"
   },
   {
+    "id": "5c6d0dfd-92d2-4c2c-b7f6-d206ddd08eb4",
     "title": "Shigity's Costly TFT Item Mistake!",
     "score": 85,
     "hook": "Watch Shigity realize a crucial item placement error that cost him a win in TFT!",
@@ -1008,6 +1084,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=9h33m4s",
     "start_time_sec": 34384,
     "end_time_sec": 34411,
@@ -1017,6 +1094,7 @@
     "status": "failed"
   },
   {
+    "id": "047f2345-94e7-4660-8ea1-b419db71207a",
     "title": "Shigity's Bizarre 2026 Chopstick Challenge!",
     "score": 85,
     "hook": "Shigity reveals his bizarre and hilarious goal for 2026: not washing his chopstick! Can he really go a whole year?",
@@ -1029,6 +1107,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h47m44s",
     "start_time_sec": 24464,
     "end_time_sec": 24498,
@@ -1038,6 +1117,7 @@
     "status": "failed"
   },
   {
+    "id": "267c5ac7-25c6-49f4-b15c-c738ec0886ae",
     "title": "Shigity's Loki Knowledge Test!",
     "score": 85,
     "hook": "Watch Shigity get hilariously confused when asked about Loki!",
@@ -1050,6 +1130,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=3h20m6s",
     "start_time_sec": 12006,
     "end_time_sec": 12022,
@@ -1059,6 +1140,7 @@
     "status": "failed"
   },
   {
+    "id": "12df0a9d-387d-4d82-b688-c9efa010ddf0",
     "title": "Shigity's Controversial TFT Solo Queue Advice!",
     "score": 85,
     "hook": "Shigity just started playing TFT, but he's already got some spicy advice for new players, including why you should NEVER solo queue and what comps are dominating the meta!",
@@ -1072,6 +1154,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h0m38s",
     "start_time_sec": 7238,
     "end_time_sec": 7320,
@@ -1081,6 +1164,7 @@
     "status": "failed"
   },
   {
+    "id": "976fa40f-5807-4b73-b023-be1a4d087b5d",
     "title": "Level 1 Disaster! Shigity's Team Gets Wiped!",
     "score": 85,
     "hook": "Watch Shigity's team get absolutely steamrolled at level 1, leading to a hilarious and frustrated reaction!",
@@ -1093,6 +1177,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h21m1s",
     "start_time_sec": 19261,
     "end_time_sec": 19306,
@@ -1102,6 +1187,7 @@
     "status": "failed"
   },
   {
+    "id": "59c84b0e-9d1a-4ae9-b859-1d0962528710",
     "title": "Shigity's PC Upgrade Master Plan (or Disaster?)",
     "score": 85,
     "hook": "Shigity debates his PC upgrade strategy, considering giving his old rig away and the struggles of streaming on a dying machine!",
@@ -1114,6 +1200,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=0h9m46s",
     "start_time_sec": 586,
     "end_time_sec": 658,
@@ -1123,6 +1210,7 @@
     "status": "failed"
   },
   {
+    "id": "adf1df4b-8977-41bd-9f32-e37195ef3b26",
     "title": "Shigity's BIG 2026 Plans: More Variety & IRL Streams!",
     "score": 85,
     "hook": "Shigity shares his exciting New Year's resolutions, including big plans for variety content and even IRL streams! Get ready for what's next!",
@@ -1137,6 +1225,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h30m53s",
     "start_time_sec": 30653,
     "end_time_sec": 30716,
@@ -1146,6 +1235,7 @@
     "status": "failed"
   },
   {
+    "id": "cc2eb8cb-4d85-4649-b1ac-27541415ac31",
     "title": "Shigity's Mine Mistake: 'I Thought the Mine's Tank!'",
     "score": 85,
     "hook": "Watch Shigity's priceless reaction as he mistakenly thinks a mine is a tank! This unexpected moment will have you laughing.",
@@ -1159,6 +1249,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h6m52s",
     "start_time_sec": 22012,
     "end_time_sec": 22062,
@@ -1168,6 +1259,7 @@
     "status": "failed"
   },
   {
+    "id": "ce027c5a-e5b2-4863-a401-c0537548864b",
     "title": "Same Guy Four Games in a Row?!",
     "score": 85,
     "hook": "Shigity's exasperation after being matched with the same player four games in a row. Can you relate?",
@@ -1180,6 +1272,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h39m2s",
     "start_time_sec": 20342,
     "end_time_sec": 20366,
@@ -1189,6 +1282,7 @@
     "status": "failed"
   },
   {
+    "id": "de964ace-4096-4958-b112-1bd66f079d9a",
     "title": "Shigity's Stream is COOKED!",
     "score": 85,
     "hook": "Watch Shigity's hilarious reaction as his stream completely gives up on him, forcing a game change!",
@@ -1202,6 +1296,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h10m51s",
     "start_time_sec": 15051,
     "end_time_sec": 15066,
@@ -1211,6 +1306,7 @@
     "status": "failed"
   },
   {
+    "id": "f427eb89-f20d-4551-bf1f-791acbca559a",
     "title": "Shigity's Revolutionary 'Reading with Your Ears' Method!",
     "score": 85,
     "hook": "Ever been told you don't read enough? Shigity has a genius solution: just listen to YouTube audio! Find out why he calls it 'reading with your ears.'",
@@ -1223,6 +1319,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h40m35s",
     "start_time_sec": 31235,
     "end_time_sec": 31273,
@@ -1232,6 +1329,7 @@
     "status": "failed"
   },
   {
+    "id": "dc3d8d8e-a4c5-427b-bd37-30b21d59f4fa",
     "title": "Shigity's Grim 2026 Prediction: 'It Gets Even Worse!'",
     "score": 82,
     "hook": "Shigity's grim (and funny) prediction for 2026: 'It gets even worse!' Plus, a relatable take on rising taxes.",
@@ -1244,6 +1342,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=7h2m24s",
     "start_time_sec": 25344,
     "end_time_sec": 25383,
@@ -1253,6 +1352,7 @@
     "status": "failed"
   },
   {
+    "id": "673f84bc-96a9-4657-b186-09d089ab5baa",
     "title": "Shigity: \"I'm Literally Jesus Bro\" - The Most Tan Streamer?",
     "score": 80,
     "hook": "You won't believe Shigity's bold claim about his status among streamers! Is he the 'most tan of the hot streamers'?",
@@ -1265,6 +1365,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=7h28m45s",
     "start_time_sec": 26925,
     "end_time_sec": 26945,
@@ -1274,6 +1375,7 @@
     "status": "failed"
   },
   {
+    "id": "8ab654d5-d7e2-4391-abf2-ddae60b072c9",
     "title": "Shigity Debunks 'DGN Hours' on New Year's!",
     "score": 80,
     "hook": "Shigity claps back at chat's 'DGN hours' comment with a hilarious reminder about federal holidays!",
@@ -1287,6 +1389,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=9h49m8s",
     "start_time_sec": 35348,
     "end_time_sec": 35377,
@@ -1296,6 +1399,7 @@
     "status": "failed"
   },
   {
+    "id": "6259d6cc-5e1c-4042-8084-49bb7ddbaa20",
     "title": "Shigity's Ambitious Goal: Living to 100!",
     "score": 80,
     "hook": "How long do you plan to live? Shigity, a 'young 36,' is setting his sights on a century! Find out his reasoning.",
@@ -1309,6 +1413,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h44m17s",
     "start_time_sec": 9857,
     "end_time_sec": 9918,
@@ -1318,6 +1423,7 @@
     "status": "failed"
   },
   {
+    "id": "7acccb34-f585-44f9-98eb-1431fe46cd2a",
     "title": "Shigity's 'Better Content' Philosophy: When Mistakes Happen",
     "score": 80,
     "hook": "Shigity makes a classic in-game blunder and immediately turns it into a moment of self-aware humor, declaring it 'better content.' See how he handles the unexpected!",
@@ -1330,6 +1436,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h49m58s",
     "start_time_sec": 31798,
     "end_time_sec": 31832,
@@ -1339,6 +1446,7 @@
     "status": "failed"
   },
   {
+    "id": "a431a377-24ec-4cce-9b31-8ca1e4baf6aa",
     "title": "Why Shigity Took a 90-Day Copyright Strike Penalty",
     "score": 80,
     "hook": "Ever wondered why streamers sometimes just take a copyright strike penalty? Shigity explains why he chose the 90-day ban over dealing with the appeal process.",
@@ -1352,6 +1460,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h37m49s",
     "start_time_sec": 9469,
     "end_time_sec": 9507,
@@ -1361,6 +1470,7 @@
     "status": "failed"
   },
   {
+    "id": "4d7c0a67-6b43-4783-b186-274fae13c310",
     "title": "Burrito or Enchilada? Shigity's Culinary Confession!",
     "score": 80,
     "hook": "Shigity gets grilled about his dinner, denies it's a burrito, then admits to enchiladas... which he calls a \"rolled burrito.\" The plot thickens when he reveals his \"cooking\" method!",
@@ -1374,6 +1484,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h25m30s",
     "start_time_sec": 5130,
     "end_time_sec": 5189,
@@ -1383,6 +1494,7 @@
     "status": "failed"
   },
   {
+    "id": "83911ff9-3a1f-46b5-b0a9-1c811b0300d1",
     "title": "Jaina Proudmoore in 2025?! Shigity's Take!",
     "score": 80,
     "hook": "Shigity questions who would even own Jaina Proudmoore in 2025, leading to a funny exchange about knowing what's real or not!",
@@ -1396,6 +1508,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h1m51s",
     "start_time_sec": 21711,
     "end_time_sec": 21728,
@@ -1405,6 +1518,7 @@
     "status": "failed"
   },
   {
+    "id": "b5c20042-503d-4531-90ea-9c7b5ffa9a47",
     "title": "Shigity's BIG PC Upgrade Announcement!",
     "score": 80,
     "hook": "After battling relentless lag, Shigity makes a major announcement about his PC setup and why it's a necessary investment!",
@@ -1418,6 +1532,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h11m28s",
     "start_time_sec": 15088,
     "end_time_sec": 15123,
@@ -1427,6 +1542,7 @@
     "status": "failed"
   },
   {
+    "id": "b0be745f-2a52-4af6-9663-d6c33a01e1ed",
     "title": "Shigity Learns a Game-Changing Trick from Chat!",
     "score": 80,
     "hook": "Shigity gets a game-changing tip from chat about Spire Subbine 8 and Rewind, admitting it's a 'very smart idea'!",
@@ -1439,6 +1555,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h42m21s",
     "start_time_sec": 24141,
     "end_time_sec": 24177,
@@ -1448,6 +1565,7 @@
     "status": "failed"
   },
   {
+    "id": "b5d2818f-dc8c-42e3-a8f1-a109fef6473a",
     "title": "Shigity's Ultimate Fail: 'I Didn't Hit Anything!'",
     "score": 80,
     "hook": "Watch Shigity go from giving advice to a hilarious self-own in seconds! We've all been there, right?",
@@ -1460,6 +1578,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h52m27s",
     "start_time_sec": 17547,
     "end_time_sec": 17564,
@@ -1469,6 +1588,7 @@
     "status": "failed"
   },
   {
+    "id": "b6b5b9e0-14e8-4290-927d-905ce5223ba5",
     "title": "Terrorist Pick Justification!",
     "score": 80,
     "hook": "Shigity's hilarious justification for a 'terrorist pick' after a questionable play!",
@@ -1481,6 +1601,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h30m55s",
     "start_time_sec": 19855,
     "end_time_sec": 19876,
@@ -1490,6 +1611,7 @@
     "status": "failed"
   },
   {
+    "id": "bb027d0c-6d14-4957-84f6-1df6b5a61e82",
     "title": "Shigity Reacts to the WORST Build Ever!",
     "score": 80,
     "hook": "Shigity can't believe his eyes as he encounters a truly questionable character build in-game.",
@@ -1503,6 +1625,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h0m12s",
     "start_time_sec": 14412,
     "end_time_sec": 14453,
@@ -1512,6 +1635,7 @@
     "status": "failed"
   },
   {
+    "id": "d70eb4c2-9260-4576-a939-de4b22fea1d9",
     "title": "Shigity Talks International House Buying & Down Payments",
     "score": 80,
     "hook": "Shigity congratulates a viewer on their first house and sparks a global discussion on down payments and home buying!",
@@ -1525,6 +1649,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=0h20m53s",
     "start_time_sec": 1253,
     "end_time_sec": 1338,
@@ -1534,6 +1659,7 @@
     "status": "failed"
   },
   {
+    "id": "e985d0f3-447e-4d69-9f90-e65870a5bbcc",
     "title": "Shigity's Minigun Frustration: \"A Lot of Work for This?!\"",
     "score": 80,
     "hook": "Ever feel like you're doing all the work only to get outplayed by a simple strategy? Shigity knows the feeling!",
@@ -1547,6 +1673,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h32m49s",
     "start_time_sec": 30769,
     "end_time_sec": 30784,
@@ -1556,6 +1683,7 @@
     "status": "failed"
   },
   {
+    "id": "925ff384-a305-468c-a6ec-8f9a86cb8b87",
     "title": "Shigity's Worst Nightmare: New Neighbors!",
     "score": 78,
     "hook": "Shigity might be getting new neighbors after two years, and he's already calling it 'bad news'! Can you relate?",
@@ -1569,6 +1697,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h53m40s",
     "start_time_sec": 10420,
     "end_time_sec": 10443,
@@ -1578,6 +1707,7 @@
     "status": "failed"
   },
   {
+    "id": "b256f548-23fc-430e-ac6d-5be80f455e90",
     "title": "Shigity's Tech Struggle & Mod Appreciation!",
     "score": 78,
     "hook": "Watch Shigity hilariously struggle with Twitch tools to find banned users, then give a shoutout to his mods for keeping the chat in line!",
@@ -1590,6 +1720,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h19m19s",
     "start_time_sec": 4759,
     "end_time_sec": 4806,
@@ -1599,6 +1730,7 @@
     "status": "failed"
   },
   {
+    "id": "db54d624-709f-4c21-8688-b348a55f130a",
     "title": "Shigity's Post-Game Regret: Should've Dropped Demacia!",
     "score": 78,
     "hook": "Shigity reflects on a tough TFT loss, realizing he should have abandoned his Demacia comp earlier!",
@@ -1612,6 +1744,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=9h39m59s",
     "start_time_sec": 34799,
     "end_time_sec": 34818,
@@ -1621,6 +1754,7 @@
     "status": "failed"
   },
   {
+    "id": "137ecab0-29e9-420e-ae8e-50b1d3673d96",
     "title": "Shigity's Unexpected Peach Obsession!",
     "score": 75,
     "hook": "What's Shigity's latest obsession? He can't get enough of anything peach-flavored, from yogurt to boba! Find out why he thinks it's 'hella good'.",
@@ -1634,6 +1768,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h39m50s",
     "start_time_sec": 9590,
     "end_time_sec": 9610,
@@ -1643,6 +1778,7 @@
     "status": "failed"
   },
   {
+    "id": "a152eac7-ab7b-4cba-a2a1-79d8504f511f",
     "title": "Shigity Questions This Wild Game Build!",
     "score": 75,
     "hook": "Shigity is baffled by a specific game build, asking 'Thoughts and concerns' and feeling like 'something's wrong up there, man!'",
@@ -1656,6 +1792,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=4h0m18s",
     "start_time_sec": 14418,
     "end_time_sec": 14453,
@@ -1665,6 +1802,7 @@
     "status": "failed"
   },
   {
+    "id": "24100f3b-5bd2-4c69-a7a2-1273c5d373b1",
     "title": "Shigity's Deep Thoughts on Boba Texture",
     "score": 75,
     "hook": "Ever wondered what boba texture is *really* like? Shigity breaks it down in the most relatable way.",
@@ -1677,6 +1815,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=3h23m57s",
     "start_time_sec": 12237,
     "end_time_sec": 12268,
@@ -1686,6 +1825,7 @@
     "status": "failed"
   },
   {
+    "id": "41bd537d-8f6c-4a82-bd30-98490c517e24",
     "title": "Shigity's Passport Problem: Can't Leave the Country!",
     "score": 75,
     "hook": "Shigity reveals the surprising reason he can't leave the country and shares a throwback to his European adventures!",
@@ -1698,6 +1838,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=7h25m27s",
     "start_time_sec": 26727,
     "end_time_sec": 26784,
@@ -1707,6 +1848,7 @@
     "status": "failed"
   },
   {
+    "id": "573c9ab1-b304-4c51-af6d-4f7a8d01950d",
     "title": "Shigity's Spicy Hero Pool? Maybe Not!",
     "score": 75,
     "hook": "Shigity reveals his 'not-so-spicy' hero pool and makes a hilarious comment about buying Alex. Can you relate to having a limited hero selection?",
@@ -1720,6 +1862,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h1m0s",
     "start_time_sec": 21660,
     "end_time_sec": 21695,
@@ -1729,6 +1872,7 @@
     "status": "failed"
   },
   {
+    "id": "5e11f992-ed28-4d1a-8424-3c97a651d67b",
     "title": "Shigity's MVP Secret: Just Press R!",
     "score": 75,
     "hook": "Shigity celebrates a well-deserved break and reveals his simple, yet effective, strategy for getting MVP in Heroes of the Storm: just press R!",
@@ -1742,6 +1886,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h34m22s",
     "start_time_sec": 5662,
     "end_time_sec": 5696,
@@ -1751,6 +1896,7 @@
     "status": "failed"
   },
   {
+    "id": "4d7215ab-9894-473c-8a3e-e10b447aa62e",
     "title": "Streamer Life: Shigity Battles Game Capture Issues!",
     "score": 75,
     "hook": "Every streamer's nightmare! Watch Shigity navigate the classic \"game capture isn't working\" dilemma live on stream.",
@@ -1765,6 +1911,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h35m51s",
     "start_time_sec": 30951,
     "end_time_sec": 30978,
@@ -1774,6 +1921,7 @@
     "status": "failed"
   },
   {
+    "id": "07b9108d-f30c-4694-ba90-aa2b673fc472",
     "title": "The Realities of Playing TFT on Mobile: Shigity's Take",
     "score": 75,
     "hook": "Shigity shares his honest thoughts on playing TFT on his phone, from the challenges of feeding mechanics to combining items. If you've ever played mobile games, you'll relate!",
@@ -1786,6 +1934,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h43m56s",
     "start_time_sec": 31436,
     "end_time_sec": 31465,
@@ -1795,6 +1944,7 @@
     "status": "failed"
   },
   {
+    "id": "a4053169-00f1-4f83-ac83-972d21f8123a",
     "title": "Shigity Explains the Art of Losing in TFT!",
     "score": 75,
     "hook": "Ever wonder why a TFT player would WANT to lose? Shigity breaks down the 'delicate balance' of lost streaking for quests!",
@@ -1808,6 +1958,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=9h54m46s",
     "start_time_sec": 35686,
     "end_time_sec": 35701,
@@ -1817,6 +1968,7 @@
     "status": "failed"
   },
   {
+    "id": "cbe92bb9-8052-4013-b0c8-300b84ca104f",
     "title": "Automod Goes WILD on Shigity's Stream!",
     "score": 75,
     "hook": "You won't believe what word the automod just censored on Shigity's stream! His reaction is priceless.",
@@ -1830,6 +1982,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=2h42m59s",
     "start_time_sec": 9779,
     "end_time_sec": 9801,
@@ -1839,6 +1992,7 @@
     "status": "failed"
   },
   {
+    "id": "e72ba851-54a5-4960-89e4-52355839a5cc",
     "title": "Shigity's Queue Hell: Where Did All the Heroes Go?",
     "score": 75,
     "hook": "Ever been stuck in queue so long you wonder if the game's community just... got lives? Shigity shares his relatable 'queue hell' experience!",
@@ -1851,6 +2005,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=0h43m50s",
     "start_time_sec": 2630,
     "end_time_sec": 2651,
@@ -1860,6 +2015,7 @@
     "status": "failed"
   },
   {
+    "id": "f978fa88-5005-4568-a76b-1ea5a983980a",
     "title": "Shigity Predicts: The Chicken Will NOT Be Nerfed!",
     "score": 75,
     "hook": "Shigity has a strong opinion on 'the chicken' character! Do you agree with his bold prediction about future nerfs?",
@@ -1872,6 +2028,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=5h0m15s",
     "start_time_sec": 18015,
     "end_time_sec": 18037,
@@ -1881,6 +2038,7 @@
     "status": "failed"
   },
   {
+    "id": "99a04aba-9a8a-4032-bf43-3e1a3fb95aea",
     "title": "Shigity's Rank Reality Check: Diamond or Platinum?",
     "score": 70,
     "hook": "Shigity hilariously debates his own rank, questioning if it's a 'diamond stream' or just 'temporarily diamond.' Which one do you think it is?",
@@ -1894,6 +2052,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=6h4m16s",
     "start_time_sec": 21856,
     "end_time_sec": 21871,
@@ -1903,6 +2062,7 @@
     "status": "failed"
   },
   {
+    "id": "cc314de0-9536-4f66-8614-aa3a7c2e17f5",
     "title": "Shigity's Brain Re-Entering Game After Phone Call!",
     "score": 70,
     "hook": "Ever made a misplay because you were distracted? Shigity blames his phone call for his \"brain re-entering the game\" mid-match!",
@@ -1916,6 +2076,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=1h57m59s",
     "start_time_sec": 7079,
     "end_time_sec": 7095,
@@ -1925,6 +2086,7 @@
     "status": "failed"
   },
   {
+    "id": "da71aab9-3fa5-4d3d-b969-b92c28a6f3d0",
     "title": "Shigity Gets Real About Being a New Streamer",
     "score": 70,
     "hook": "Shigity opens up about the challenges of being a new streamer, admitting he needs voice lessons and acknowledging the 'lot of work that needs to be done.'",
@@ -1937,6 +2099,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h57m46s",
     "start_time_sec": 32266,
     "end_time_sec": 32288,
@@ -1946,6 +2109,7 @@
     "status": "failed"
   },
   {
+    "id": "f25fd203-96f5-43be-a308-3fb13f16eef7",
     "title": "Shigity's Honest Confession: \"I Haven't Figured Out These Comps!\"",
     "score": 70,
     "hook": "Shigity gets real about his struggles with certain game compositions. Can you relate to the grind of mastering new metas?",
@@ -1960,6 +2124,7 @@
     ],
     "streamer": "Shigity",
     "vod_id": "2657947016",
+    "video_url": null,
     "twitch_vod_url": "https://www.twitch.tv/videos/2657947016?t=8h39m27s",
     "start_time_sec": 31167,
     "end_time_sec": 31193,

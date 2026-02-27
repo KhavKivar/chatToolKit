@@ -18,3 +18,5 @@ app/*.tsbuildinfo
 # Misc
 .DS_Store
 .vercel
+twitch_chrome_profile/
+downloaded_clips/

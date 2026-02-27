@@ -19,8 +19,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
+from asgiref.sync import sync_to_async
+from asgiref.sync import sync_to_async
 from scraper.models import Video, Streamer, Clip
 import scrape_clips
+from youtube_uploader import YouTubeUploader
 
 CLIPS_DIR = Path("downloaded_clips")
 
@@ -32,11 +35,12 @@ def download_clip(url, filename):
     target_path = CLIPS_DIR / filename
     
     if target_path.exists():
+        # logger.info(f"Skipping download, already exists: {filename}")
         return target_path
 
     try:
         logger.info(f"Downloading: {filename}...")
-        r = requests.get(url, stream=True)
+        r = requests.get(url, stream=True, timeout=30)
         r.raise_for_status()
         with open(target_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=8192):
@@ -46,69 +50,115 @@ def download_clip(url, filename):
         logger.error(f"Failed to download {filename}: {e}")
         return None
 
-async def run_sync():
-    logger.info("Starting StreamLadder Metadata Sync & Download...")
+@sync_to_async
+def sync_clip_to_db(data):
+    sl_id = data.get("id")
+    vod_id = data.get("vod_id")
+    title = data.get("title", "Untitled Clip")
     
-    # 1. Scrape from Streamladder (metadata only)
+    if not sl_id or not vod_id:
+        return None, False
+
+    try:
+        video = Video.objects.get(id=vod_id)
+        streamer = video.streamer
+    except Video.DoesNotExist:
+        logger.warning(f"Video {vod_id} not in DB - skipping clip '{title}'")
+        return None, False
+
+    clip, created = Clip.objects.get_or_create(
+        streamladder_id=sl_id,
+        defaults={
+            "video": video,
+            "streamer": streamer,
+            "title": title,
+        }
+    )
+
+    needs_upload = not clip.youtube_video_id
+    
+    if not created:
+        if clip.title != title:
+            clip.title = title
+            clip.save()
+    
+    return clip, needs_upload
+
+@sync_to_async
+def update_clip_youtube(clip_id, youtube_id):
+    try:
+        clip = Clip.objects.get(id=clip_id)
+        clip.youtube_video_id = youtube_id
+        clip.youtube_url = f"https://www.youtube.com/watch?v={youtube_id}"
+        clip.save()
+        return True
+    except Exception as e:
+        logger.error(f"Failed to update clip in DB: {e}")
+        return False
+
+async def run_sync():
+    logger.info("Starting StreamLadder Metadata Sync, Download & YouTube Upload...")
+    
+    # Initialize YouTube Uploader
+    # Note: Requires client_secrets.json on first run
+    uploader = YouTubeUploader()
+    if not uploader.youtube:
+        logger.warning("YouTube Uploader not initialized. Skipping upload phase.")
+        do_uploads = False
+    else:
+        do_uploads = True
+
+    # 1. Scrape from Streamladder
     await scrape_clips.main()
     
     CLIPS_JSON = Path("clips.json")
     if not CLIPS_JSON.exists():
-        logger.error("No clips.json found. Scrape failed?")
+        logger.error("No clips.json found.")
         return
 
     with open(CLIPS_JSON, "r") as f:
         clips_data = json.load(f)
 
-    logger.info(f"Syncing {len(clips_data)} items...")
+    logger.info(f"Processing {len(clips_data)} items...")
 
     for data in clips_data:
         sl_id = data.get("id")
-        vod_id = data.get("vod_id")
-        title = data.get("title", "Untitled Clip")
         video_url = data.get("video_url")
+        title = data.get("title", "AI Moment")
+        hashtags = data.get("hashtags", [])
+        streamer_name = data.get("streamer", "Streamer")
 
-        if not sl_id or not video_url:
+        # Sync to DB
+        clip, needs_upload = await sync_clip_to_db(data)
+        if not clip:
             continue
 
-        # Download clip (optional, but requested infrastructure)
-        # Use SL ID as filename to keep it unique
-        filename = f"{sl_id}.mp4"
-        local_path = download_clip(video_url, filename)
+        # Download clip if needed
+        local_path = None
+        if sl_id and video_url and data.get("status") == "succeeded":
+            filename = f"{sl_id}.mp4"
+            local_path = download_clip(video_url, filename)
 
-        try:
-            video = Video.objects.get(id=vod_id)
-            streamer = video.streamer
-        except Video.DoesNotExist:
-            logger.warning(f"Video {vod_id} not in DB - skipping clip '{title}'")
-            continue
-
-        # Update or create clip entries
-        clip, created = Clip.objects.get_or_create(
-            streamladder_id=sl_id,
-            defaults={
-                "video": video,
-                "streamer": streamer,
-                "title": title,
-                "youtube_url": data.get("youtube_url", ""),
-                "youtube_video_id": data.get("youtube_video_id", ""),
-            }
-        )
-
-        if created:
-            logger.success(f"Tracked new clip: {title}")
-        else:
-            if clip.title != title:
-                clip.title = title
+        # Upload to YouTube
+        if do_uploads and needs_upload and local_path:
+            description = (
+                f"Amazing highlight from {streamer_name}!\n\n"
+                f"Generated by AI.\n"
+                f"{' '.join(hashtags)}"
+            )
             
-            # Sync YouTube fields if your test script updates them
-            if data.get("youtube_url"):
-                clip.youtube_url = data["youtube_url"]
-                clip.youtube_video_id = data.get("youtube_video_id", "")
+            yt_id = uploader.upload_video(
+                file_path=str(local_path),
+                title=title,
+                description=description,
+                tags=hashtags + [streamer_name, "Gaming", "Clips"]
+            )
             
-            clip.save()
+            if yt_id:
+                await update_clip_youtube(clip.id, yt_id)
+                logger.success(f"Clip '{title}' is now live on YouTube and website!")
 
-    logger.info("Sync complete. Ready for YouTube upload script.")
+    logger.info("Sync sequence complete.")
 
 if __name__ == "__main__":
     asyncio.run(run_sync())

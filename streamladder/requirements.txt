@@ -2,3 +2,6 @@ playwright
 python-dotenv
 requests
 loguru
+google-api-python-client
+google-auth-oauthlib
+google-auth-httplib2
