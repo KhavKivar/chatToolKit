@@ -77,4 +77,18 @@ class ClassificationTask(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Classification {self.video_id} - {self.status}"
+        return f"Classification {self.video.id} - {self.status}"
+
+
+class Clip(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name="clips")
+    streamer = models.ForeignKey(Streamer, on_delete=models.CASCADE, related_name="clips")
+    title = models.CharField(max_length=255)
+    youtube_url = models.URLField(max_length=500, null=True, blank=True)
+    youtube_video_id = models.CharField(max_length=100, null=True, blank=True)
+    streamladder_id = models.CharField(max_length=100, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Clip: {self.title} ({self.streamer.display_name})"

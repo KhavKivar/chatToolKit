@@ -5,8 +5,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, BaseRenderer
-from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask
-from .serializers import VideoSerializer, CommentSerializer, StreamerSerializer, ScrapeTaskSerializer, ClassificationTaskSerializer
+from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip
+from .serializers import VideoSerializer, CommentSerializer, StreamerSerializer, ScrapeTaskSerializer, ClassificationTaskSerializer, ClipSerializer
 from .services import TwitchScraperService
 from datetime import datetime, timezone, timedelta
 from django.db.models import Count, Q, F, FloatField, ExpressionWrapper, Case, When, IntegerField
@@ -424,3 +424,8 @@ class ClassificationTaskViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response(self.get_serializer(task).data, status=status.HTTP_201_CREATED)
 
+
+class ClipViewSet(viewsets.ModelViewSet):
+    queryset = Clip.objects.all().order_by('-created_at')
+    serializer_class = ClipSerializer
+    filterset_fields = ['streamer', 'video']
