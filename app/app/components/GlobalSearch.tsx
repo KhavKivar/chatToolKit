@@ -10,9 +10,15 @@ import {
   Loader2,
   X,
   MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { getComments, getStreamers, getCommentContext } from "../lib/api";
+import {
+  getComments,
+  getStreamers,
+  getCommentContext,
+  getTranscripts,
+} from "../lib/api";
 import {
   Dialog,
   DialogContent,
@@ -75,12 +81,25 @@ interface ScoredComment extends Comment {
   matchedKeyword: string;
 }
 
+interface TranscriptMatch {
+  id: string;
+  video_id: string;
+  video_title: string;
+  video_streamer: string;
+  video_created_at?: string;
+  start_seconds: number;
+  text: string;
+  score: number;
+  matchedKeyword: string;
+}
+
 interface VideoGroup {
   video_id: string;
   video_title: string;
   video_streamer: string;
   video_created_at?: string;
   comments: ScoredComment[];
+  transcripts: TranscriptMatch[];
 }
 
 // ── Fuzzy similarity (Levenshtein-based) ──────────────────────────────────────
@@ -274,14 +293,15 @@ export function GlobalSearch() {
         dispatch(setSearched(true));
         const startPage = isLoadMore ? lastScannedPage + 1 : 1;
 
-        const allMatches: ScoredComment[] = [];
+        const allCommentMatches: ScoredComment[] = [];
+        const allTranscriptMatches: TranscriptMatch[] = [];
         let page = startPage;
         let hasMoreOnServer = true;
         const BATCH_SIZE = 50;
-        const ABSOLUTE_MAX_PAGES = 1000;
 
-        while (hasMoreOnServer && page <= startPage + ABSOLUTE_MAX_PAGES - 1) {
-          const data = await getComments({
+        while (hasMoreOnServer && page <= startPage + BATCH_SIZE - 1) {
+          // 1. Fetch Comments
+          const commentPromise = getComments({
             page,
             page_size: 500,
             search_or: keywords.join(","),
@@ -289,14 +309,36 @@ export function GlobalSearch() {
             min_toxicity: toxicOnly ? toxicityThreshold : undefined,
             video__streamer: activeFilter || undefined,
           });
-          const newBatch: Comment[] = data.results ?? [];
-          hasMoreOnServer = !!data.next;
 
-          dispatch(setLastScannedPage(page));
-          dispatch(setCanScanMore(hasMoreOnServer));
+          // 2. Fetch Transcripts (only if keywords are present and not in toxicOnly mode)
+          const transcriptPromise =
+            keywords.length > 0
+              ? getTranscripts({
+                  page,
+                  search: keywords.join(" "), // Simple space search for backend
+                  streamer: activeFilter || undefined,
+                })
+              : Promise.resolve({ results: [] });
 
-          // Fuzzy filter ONLY the new batch (high performance)
-          for (const c of newBatch) {
+          const [commentData, transcriptData] = await Promise.all([
+            commentPromise,
+            transcriptPromise,
+          ]);
+
+          const newCommentBatch: Comment[] = commentData.results ?? [];
+          const newTranscriptBatch: {
+            id: string;
+            video: string;
+            video_title: string;
+            streamer_name: string;
+            created_at: string;
+            start_seconds: number;
+            text: string;
+          }[] = transcriptData.results ?? transcriptData ?? [];
+          hasMoreOnServer = !!commentData.next;
+
+          // Fuzzy filter Comments
+          for (const c of newCommentBatch) {
             if (!c.video_id) continue;
             let best = 0,
               bestKw = "";
@@ -313,21 +355,53 @@ export function GlobalSearch() {
               }
             }
             if (keywords.length === 0 && toxicOnly) {
-              allMatches.push({
+              allCommentMatches.push({
                 ...c,
                 score: 1,
                 matchedKeyword: "Toxic Comment",
               });
             } else if (best >= THRESHOLD) {
-              allMatches.push({ ...c, score: best, matchedKeyword: bestKw });
+              allCommentMatches.push({
+                ...c,
+                score: best,
+                matchedKeyword: bestKw,
+              });
             }
           }
 
-          // Stop loop if we found matches OR we reached a batch limit
+          // Fuzzy filter Transcripts
+          for (const t of newTranscriptBatch) {
+            let best = 0,
+              bestKw = "";
+            for (const kw of keywords) {
+              const s = bestWordMatch(kw, t.text ?? "");
+              if (s > best) {
+                best = s;
+                bestKw = kw;
+              }
+            }
+            if (best >= THRESHOLD) {
+              allTranscriptMatches.push({
+                id: `ts-${t.id}`,
+                video_id: t.video,
+                video_title: t.video_title,
+                video_streamer: t.streamer_name,
+                video_created_at: t.created_at,
+                start_seconds: t.start_seconds,
+                text: t.text,
+                score: best,
+                matchedKeyword: bestKw,
+              });
+            }
+          }
+
+          dispatch(setLastScannedPage(page));
+          dispatch(setCanScanMore(hasMoreOnServer));
+
           if (
-            allMatches.length > 0 ||
-            page - startPage + 1 >= BATCH_SIZE ||
-            !!isLoadMore ||
+            allCommentMatches.length > 0 ||
+            allTranscriptMatches.length > 0 ||
+            isLoadMore ||
             !hasMoreOnServer
           ) {
             break;
@@ -336,27 +410,25 @@ export function GlobalSearch() {
           page++;
           dispatch(
             setSearchProgress(
-              `Scanning database... Checked ${(page - startPage + 1) * 500} messages...`,
+              `Scanning database... Checked ${page * 500} records...`,
             ),
           );
         }
 
-        if (allMatches.length === 0 && !isLoadMore) {
-          dispatch(setGroups([]));
-          return;
-        }
-
         const newGroupsMap = new Map<string, VideoGroup>();
 
-        // Merge with existing groups
         if (isLoadMore) {
           groups.forEach((g) =>
-            newGroupsMap.set(g.video_id, { ...g, comments: [...g.comments] }),
+            newGroupsMap.set(g.video_id, {
+              ...g,
+              comments: [...g.comments],
+              transcripts: [...(g.transcripts || [])],
+            }),
           );
         }
 
-        // Add/Merge new matches
-        for (const c of allMatches) {
+        // Add Comment Matches
+        for (const c of allCommentMatches) {
           if (!newGroupsMap.has(c.video_id)) {
             newGroupsMap.set(c.video_id, {
               video_id: c.video_id,
@@ -364,16 +436,33 @@ export function GlobalSearch() {
               video_streamer: c.video_streamer || "Unknown",
               video_created_at: c.video_created_at,
               comments: [],
+              transcripts: [],
             });
           }
-          // Avoid duplicates if same comment fetched twice
           const group = newGroupsMap.get(c.video_id)!;
           if (!group.comments.find((existing) => existing.id === c.id)) {
             group.comments.push(c);
           }
         }
 
-        // Sort and update
+        // Add Transcript Matches
+        for (const t of allTranscriptMatches) {
+          if (!newGroupsMap.has(t.video_id)) {
+            newGroupsMap.set(t.video_id, {
+              video_id: t.video_id,
+              video_title: t.video_title || `Video ${t.video_id}`,
+              video_streamer: t.video_streamer || "Unknown",
+              video_created_at: t.video_created_at,
+              comments: [],
+              transcripts: [],
+            });
+          }
+          const group = newGroupsMap.get(t.video_id)!;
+          if (!group.transcripts.find((existing) => existing.id === t.id)) {
+            group.transcripts.push(t);
+          }
+        }
+
         const grouped = [...newGroupsMap.values()].sort((a, b) => {
           const dateA = a.video_created_at
             ? new Date(a.video_created_at).getTime()
@@ -384,15 +473,16 @@ export function GlobalSearch() {
           return dateB - dateA;
         });
 
-        grouped.forEach((g) =>
+        grouped.forEach((g) => {
           g.comments.sort(
             (a, b) => a.content_offset_seconds - b.content_offset_seconds,
-          ),
-        );
+          );
+          g.transcripts.sort((a, b) => a.start_seconds - b.start_seconds);
+        });
 
         dispatch(setGroups(grouped));
         const totalFound = grouped.reduce(
-          (acc, g) => acc + g.comments.length,
+          (acc, g) => acc + g.comments.length + g.transcripts.length,
           0,
         );
         dispatch(setTotalMatches(totalFound));
@@ -766,7 +856,7 @@ export function GlobalSearch() {
               {/* Animated gradient top bar */}
               <div className="h-1 w-full bg-muted overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-primary/0 via-primary to-primary/0 animate-shimmer"
+                  className="h-full bg-linear-to-r from-primary/0 via-primary to-primary/0 animate-shimmer"
                   style={{
                     width: "200%",
                     animation: "shimmer 1.5s infinite linear",
@@ -850,7 +940,7 @@ export function GlobalSearch() {
                   style={{ animationDelay: `${groupIdx * 50}ms` }}
                 >
                   {/* Video header */}
-                  <CardHeader className="py-4 bg-gradient-to-r from-muted/30 to-transparent">
+                  <CardHeader className="py-4 bg-linear-to-r from-muted/30 to-transparent">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="bg-purple-600/10 p-2 rounded-lg shrink-0">
@@ -897,94 +987,145 @@ export function GlobalSearch() {
                     </div>
                   </CardHeader>
 
-                  {/* Comments list */}
-                  <CardContent className="pt-0 pb-4 px-4">
-                    <div className="space-y-3">
-                      {group.comments.map((c: ScoredComment, idx: number) => (
-                        <div key={c.id}>
-                          {idx > 0 && <Separator className="my-2" />}
-                          <div className="flex items-start justify-between gap-2">
-                            {/* Left: username + timestamp + badges */}
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-bold text-sm text-primary">
-                                {c.commenter_display_name}
-                              </span>
-                              <span className="text-[11px] font-mono text-muted-foreground">
-                                {formatTime(c.content_offset_seconds)}
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] font-mono px-1.5"
-                              >
-                                {Math.round(c.score * 100)}%
-                              </Badge>
-                              <Badge
-                                variant="secondary"
-                                className="text-[10px]"
-                              >
-                                {c.matchedKeyword}
-                              </Badge>
-
-                              {c.toxicity_score === undefined ||
-                              c.toxicity_score === null ? (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] text-muted-foreground border-dashed"
-                                >
-                                  No tag yet
-                                </Badge>
-                              ) : c.toxicity_score >= 0.8 ? (
-                                <Badge
-                                  variant="destructive"
-                                  className="text-[10px]"
-                                >
-                                  Toxic {Math.round(c.toxicity_score * 100)}%
-                                </Badge>
-                              ) : c.toxicity_score >= 0.4 ? (
-                                <Badge
-                                  variant="secondary"
-                                  className="text-[10px] bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-900/40 dark:text-slate-400 dark:border-slate-800"
-                                >
-                                  Neutral {Math.round(c.toxicity_score * 100)}%
-                                </Badge>
-                              ) : (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/20 dark:border-emerald-800"
-                                >
-                                  Non Toxic{" "}
-                                  {Math.round((1 - c.toxicity_score) * 100)}%
-                                </Badge>
-                              )}
-                            </div>
-                            {/* Right: Actions */}
-                            <div className="flex items-center gap-2 shrink-0">
-                              <button
-                                onClick={() => handleViewContext(c)}
-                                className="flex items-center gap-1.5 shrink-0 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 border border-blue-300 dark:border-blue-700 rounded px-2 py-0.5 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
-                              >
-                                <Eye size={11} /> Context
-                              </button>
-                              <a
-                                href={twitchTimestampLink(
-                                  c.video_id,
-                                  c.content_offset_seconds,
-                                )}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 shrink-0 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
-                              >
-                                <Twitch size={11} />
-                                Watch
-                                <ExternalLink size={10} />
-                              </a>
-                            </div>
+                  {/* Results list */}
+                  <CardContent className="pt-0 pb-4 px-4 overflow-hidden">
+                    <div className="space-y-4">
+                      {/* Comments Section */}
+                      {group.comments.length > 0 && (
+                        <div className="space-y-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <MessageSquare
+                              size={12}
+                              className="text-primary/50"
+                            />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+                              Chat Mentions
+                            </span>
                           </div>
-                          <p className="text-sm text-foreground/90 mt-1.5 leading-relaxed">
-                            {c.message}
-                          </p>
+                          {group.comments.map(
+                            (c: ScoredComment, idx: number) => (
+                              <div key={c.id}>
+                                {idx > 0 && (
+                                  <Separator className="my-2 opacity-50" />
+                                )}
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-bold text-sm text-primary">
+                                      {c.commenter_display_name}
+                                    </span>
+                                    <span className="text-[11px] font-mono text-muted-foreground">
+                                      {formatTime(c.content_offset_seconds)}
+                                    </span>
+                                    <Badge
+                                      variant="outline"
+                                      className="text-[10px] font-mono px-1.5"
+                                    >
+                                      {Math.round(c.score * 100)}%
+                                    </Badge>
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[10px]"
+                                    >
+                                      {c.matchedKeyword}
+                                    </Badge>
+                                    {c.toxicity_score !== undefined &&
+                                      c.toxicity_score >= 0.8 && (
+                                        <Badge
+                                          variant="destructive"
+                                          className="text-[10px]"
+                                        >
+                                          Toxic
+                                        </Badge>
+                                      )}
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                      onClick={() => handleViewContext(c)}
+                                      className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 border border-blue-300 dark:border-blue-700 rounded px-2 py-0.5 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
+                                    >
+                                      <Eye size={11} /> Context
+                                    </button>
+                                    <a
+                                      href={twitchTimestampLink(
+                                        c.video_id,
+                                        c.content_offset_seconds,
+                                      )}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
+                                    >
+                                      <Twitch size={11} /> Watch{" "}
+                                      <ExternalLink size={10} />
+                                    </a>
+                                  </div>
+                                </div>
+                                <p className="text-sm text-foreground/90 mt-1.5 leading-relaxed">
+                                  {c.message}
+                                </p>
+                              </div>
+                            ),
+                          )}
                         </div>
-                      ))}
+                      )}
+
+                      {/* Transcripts Section */}
+                      {group.transcripts && group.transcripts.length > 0 && (
+                        <div className="space-y-3 pt-2 border-t mt-4 border-dashed">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Sparkles
+                              size={12}
+                              className="text-purple-500/50"
+                            />
+                            <span className="text-[10px] font-black uppercase tracking-widest text-purple-500/50">
+                              Said by Streamer
+                            </span>
+                          </div>
+                          {group.transcripts.map((t: TranscriptMatch) => (
+                            <div
+                              key={t.id}
+                              className="bg-purple-500/5 dark:bg-purple-500/10 p-3 rounded-xl border border-purple-500/10"
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <Badge className="bg-purple-600 text-white border-none text-[9px] font-black h-4 px-1.5 uppercase tracking-tighter shadow-sm">
+                                    VOD TRANSCRIPT
+                                  </Badge>
+                                  <span className="text-[11px] font-mono text-purple-600/70 dark:text-purple-400/70 font-bold">
+                                    {formatTime(t.start_seconds)}
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className="text-[10px] font-mono px-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400"
+                                  >
+                                    {Math.round(t.score * 100)}%
+                                  </Badge>
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-[10px] bg-purple-500/20 text-purple-700 dark:text-purple-300 border-none"
+                                  >
+                                    {t.matchedKeyword}
+                                  </Badge>
+                                </div>
+                                <a
+                                  href={twitchTimestampLink(
+                                    t.video_id,
+                                    Math.floor(t.start_seconds),
+                                  )}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors shrink-0"
+                                >
+                                  <Twitch size={11} /> Watch{" "}
+                                  <ExternalLink size={10} />
+                                </a>
+                              </div>
+                              <p className="text-sm text-foreground/90 mt-2 font-medium italic leading-relaxed">
+                                &quot;{t.text}&quot;
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

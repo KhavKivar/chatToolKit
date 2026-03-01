@@ -108,6 +108,21 @@ async def main():
         print(f"[+] Results page: {page.url}")
         print(f"[+] Captured project API: {len(project_data.get('clips', []))} clips")
 
+        # Capture transcript if available
+        transcript_url = project_data.get("transcriptionFileUrl")
+        transcript_data = []
+        if transcript_url:
+            print(f"[*] Found transcript URL: {transcript_url}")
+            try:
+                # Fetch via page.evaluate to use browser's authenticated session
+                transcript_data = await page.evaluate(
+                    f"url => fetch(url).then(r => r.json())", 
+                    transcript_url
+                )
+                print(f"[+] Downloaded transcript: {len(transcript_data)} entries")
+            except Exception as e:
+                print(f"[!] Failed to download transcript: {e}")
+
         await browser.close()
 
     if not project_data:
@@ -165,6 +180,13 @@ async def main():
 
     Path("clips.json").write_text(json.dumps(clips, indent=2, ensure_ascii=False))
     print(f"\n[+] Saved {len(clips)} clips to clips.json")
+
+    if transcript_data:
+        Path("transcripts.json").write_text(json.dumps(transcript_data, indent=2, ensure_ascii=False))
+        print(f"[+] Saved {len(transcript_data)} transcript entries to transcripts.json")
+    else:
+        # Clear old file if no transcript found
+        Path("transcripts.json").unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

@@ -16,12 +16,25 @@ interface ScoredComment extends Comment {
   matchedKeyword: string;
 }
 
+interface TranscriptMatch {
+  id: string;
+  video_id: string;
+  video_title: string;
+  video_streamer: string;
+  video_created_at?: string;
+  start_seconds: number;
+  text: string;
+  score: number;
+  matchedKeyword: string;
+}
+
 interface VideoGroup {
   video_id: string;
   video_title: string;
   video_streamer: string;
   video_created_at?: string;
   comments: ScoredComment[];
+  transcripts: TranscriptMatch[];
 }
 
 interface SearchState {

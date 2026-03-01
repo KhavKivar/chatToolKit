@@ -1,10 +1,28 @@
 from rest_framework import serializers
-from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip
+from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip, TranscriptEntry
 
 class VideoSerializer(serializers.ModelSerializer):
+    clip_count = serializers.SerializerMethodField()
+    first_clip_url = serializers.SerializerMethodField()
+    has_transcript = serializers.SerializerMethodField()
+
     class Meta:
         model = Video
-        fields = '__all__'
+        fields = [
+            'id', 'title', 'streamer', 'streamer_login', 'streamer_display_name',
+            'length_seconds', 'created_at', 'thumbnail_url', 'clip_count', 'first_clip_url',
+            'has_transcript'
+        ]
+
+    def get_clip_count(self, obj):
+        return obj.clips.count()
+
+    def get_first_clip_url(self, obj):
+        clip = obj.clips.exclude(s3_url=None).exclude(s3_url='').first()
+        return clip.s3_url if clip else None
+
+    def get_has_transcript(self, obj):
+        return obj.transcripts.exists()
 
 class CommentSerializer(serializers.ModelSerializer):
     video_id = serializers.CharField(source='video.id', read_only=True)
@@ -58,4 +76,14 @@ class ClipSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Clip
+        fields = '__all__'
+
+
+class TranscriptEntrySerializer(serializers.ModelSerializer):
+    streamer_name = serializers.CharField(source='streamer.display_name', read_only=True)
+    video_title = serializers.CharField(source='video.title', read_only=True)
+    video_created_at = serializers.DateTimeField(source='video.created_at', read_only=True)
+
+    class Meta:
+        model = TranscriptEntry
         fields = '__all__'
