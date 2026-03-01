@@ -5,8 +5,12 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, BaseRenderer
-from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip
-from .serializers import VideoSerializer, CommentSerializer, StreamerSerializer, ScrapeTaskSerializer, ClassificationTaskSerializer, ClipSerializer
+from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip, TranscriptEntry
+from .serializers import (
+    VideoSerializer, CommentSerializer, StreamerSerializer, 
+    ScrapeTaskSerializer, ClassificationTaskSerializer, ClipSerializer,
+    TranscriptEntrySerializer
+)
 from .services import TwitchScraperService
 from datetime import datetime, timezone, timedelta
 from django.db.models import Count, Q, F, FloatField, ExpressionWrapper, Case, When, IntegerField
@@ -239,10 +243,46 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
 
         total_videos = qs.values('video__id').distinct().count()
 
+        # 7. Streamer top words (from transcripts)
+        transcript_qs = TranscriptEntry.objects.all()
+        if streamer_id:
+            transcript_qs = transcript_qs.filter(streamer_id=streamer_id)
+        
+        # Limit to 2000 entries for performance, focusing on most recent
+        transcripts = transcript_qs.only('text').order_by('-id')[:2000]
+        
+        import re
+        from collections import Counter
+        
+        all_words = []
+        # Stop words (simplified set)
+        STOP_WORDS = {
+            'a', 'the', 'and', 'or', 'to', 'of', 'in', 'is', 'it', 'for', 'with', 'on', 'as', 'at', 'this', 'that', 'from', 'but', 'not', 'by', 'an', 'be', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did', 'if', 'then', 'than', 'up', 'down', 'out', 'off', 'me', 'you', 'he', 'she', 'they', 'them', 'my', 'your', 'his', 'her', 'their', 'our', 'what', 'which', 'who', 'how', 'where', 'when', 'why',
+            'la', 'el', 'en', 'y', 'de', 'un', 'una', 'con', 'por', 'que', 'lo', 'los', 'las', 'del', 'mi', 'tu', 'su', 'nos', 'os', 'les', 'este', 'esta', 'esto', 'eso', 'para', 'porque', 'pero', 'como', 'si', 'no', 'ya', 'muy', 'mas', 'tan', 'muy', 'todo', 'nada', 'otro', 'cada', 'una', 'uno', 'donde', 'cual', 'esta', 'estos', 'estas', 'ser', 'estar', 'ha', 'has', 'he', 'han', 'hay',
+            'like', 'know', 'just', 'get', 'think', 'yeah', 'okay', 'right', 'well', 'really', 'now', 'time', 'good', 'see', 'can', 'don', 'actually', 'maybe', 'lot', 'little', 'bit', 'would', 'going', 'there', 'mean', 'one', 'here', 'man', 'got', 'something', 'everything', 'everyone', 'someone'
+        }
+        
+        for t in transcripts:
+            if t.text:
+                t_words = re.findall(r'\b\w+\b', t.text.lower())
+                for w in t_words:
+                    if len(w) > 2 and w not in STOP_WORDS:
+                        all_words.append(w)
+        
+        top_streamer_words = Counter(all_words).most_common(12) # Fetch a few more for filter buffer
+        top_streamer_words = [{"word": w, "count": c} for w, c in top_streamer_words][:10]
+
+        # 8. Complex words (length > 8)
+        complex_words = [w for w in all_words if len(w) > 8]
+        top_complex_words = Counter(complex_words).most_common(10)
+        top_complex_words = [{"word": w, "count": c} for w, c in top_complex_words]
+
         return Response({
             "top_commenters": list(top_commenters),
             "most_toxic_absolute": list(most_toxic_absolute),
             "most_toxic_relative": list(most_toxic_relative),
+            "top_streamer_words": top_streamer_words,
+            "top_complex_words": top_complex_words,
             "toxicity_by_video": list(toxicity_by_video),
             "top_videos_by_volume": list(top_videos_by_volume),
             "hourly_stats": list(hourly_stats),
@@ -429,3 +469,25 @@ class ClipViewSet(viewsets.ModelViewSet):
     queryset = Clip.objects.all().order_by('-created_at')
     serializer_class = ClipSerializer
     filterset_fields = ['streamer', 'video']
+
+class TranscriptEntryViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = TranscriptEntry.objects.all().order_by('video', 'start_seconds')
+    serializer_class = TranscriptEntrySerializer
+    filterset_fields = ['video', 'streamer']
+    search_fields = ['text']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(text__icontains=search)
+        
+        video_id = self.request.query_params.get('video')
+        if video_id:
+            qs = qs.filter(video_id=video_id)
+            
+        streamer_id = self.request.query_params.get('streamer')
+        if streamer_id:
+            qs = qs.filter(streamer_id=streamer_id)
+            
+        return qs

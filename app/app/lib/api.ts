@@ -1,8 +1,11 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  typeof window !== "undefined" && window.location.hostname === "localhost"
-    ? "http://localhost:8000/api"
+  typeof window !== "undefined" &&
+  (window.location.hostname === "localhost" ||
+    window.location.hostname === "127.0.0.1" ||
+    window.location.hostname.startsWith("192.168."))
+    ? `http://${window.location.hostname}:8000/api`
     : "https://backend.permisossubtel.cl/api";
 
 const api = axios.create({
@@ -157,5 +160,29 @@ export function scrapeWithProgress(
 
   return () => es.close();
 }
+
+export const getClips = async (params?: {
+  streamer?: string;
+  video?: string;
+  page?: number;
+}) => {
+  const response = await api.get("/clips/", { params });
+  return response.data;
+};
+
+export const getTranscripts = async (params?: {
+  streamer?: string;
+  video?: string;
+  search?: string;
+  page?: number;
+}) => {
+  const response = await api.get("/transcripts/", { params });
+  return response.data;
+};
+
+export const getClip = async (id: string) => {
+  const response = await api.get(`/clips/${id}/`);
+  return response.data;
+};
 
 export default api;

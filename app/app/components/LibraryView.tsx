@@ -8,7 +8,12 @@ import {
   Calendar,
   RefreshCcw,
   Search,
+  Clapperboard,
+  Sparkles,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ClipGrid } from "./ClipGrid";
+import { TranscriptView } from "./TranscriptView";
 import Link from "next/link";
 import { refreshStreamerVods, getStreamers, getVideos } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +41,9 @@ interface Video {
   created_at: string;
   length_seconds?: number;
   thumbnail_url?: string;
+  clip_count?: number;
+  first_clip_url?: string;
+  has_transcript?: boolean;
 }
 
 export function LibraryView() {
@@ -122,9 +130,37 @@ export function LibraryView() {
             {selectedVideo.title || `Video ${selectedVideo.id}`}
           </h2>
         </div>
-        <div className="h-[80vh] border rounded-xl overflow-hidden shadow-2xl bg-card border-primary/20">
-          <CommentList videoId={selectedVideo.id} />
-        </div>
+        <Tabs defaultValue="comments" className="w-full">
+          <TabsList className="grid w-full max-w-[500px] grid-cols-3 mb-4">
+            <TabsTrigger value="comments" className="flex items-center gap-2">
+              <RefreshCcw size={14} /> Comments
+            </TabsTrigger>
+            <TabsTrigger value="clips" className="flex items-center gap-2">
+              <Clapperboard size={14} /> AI Clips
+            </TabsTrigger>
+            <TabsTrigger value="transcript" className="flex items-center gap-2">
+              <Search size={14} /> Stream Transcript
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="comments">
+            <div className="h-[75vh] border rounded-xl overflow-hidden shadow-2xl bg-card border-primary/20">
+              <CommentList videoId={selectedVideo.id} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="clips">
+            <div className="py-2">
+              <ClipGrid videoId={selectedVideo.id} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="transcript">
+            <div className="py-2">
+              <TranscriptView videoId={selectedVideo.id} />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
@@ -191,7 +227,7 @@ export function LibraryView() {
           </div>
         </div>
 
-        <div className="flex items-center gap-5 p-6 bg-gradient-to-r from-primary/10 to-transparent rounded-2xl border border-primary/10">
+        <div className="flex items-center gap-5 p-6 bg-linear-to-r from-primary/10 to-transparent rounded-2xl border border-primary/10">
           {selectedStreamer.profile_image_url ? (
             <img
               src={selectedStreamer.profile_image_url}
@@ -235,11 +271,28 @@ export function LibraryView() {
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 to-black group-hover:scale-105 transition-transform duration-700" />
+                    <div className="absolute inset-0 bg-linear-to-br from-purple-900/40 to-black group-hover:scale-105 transition-transform duration-700" />
                   )}
 
-                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300" />
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform group-hover:scale-110">
+                  {v.first_clip_url && (
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 z-10 bg-black">
+                      <video
+                        src={v.first_clip_url}
+                        className="w-full h-full object-cover"
+                        muted
+                        loop
+                        playsInline
+                        onMouseOver={(e) => e.currentTarget.play()}
+                        onMouseOut={(e) => {
+                          e.currentTarget.pause();
+                          e.currentTarget.currentTime = 0;
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors duration-300 z-0" />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform group-hover:scale-110 z-20">
                     <div className="bg-primary hover:bg-primary/90 text-primary-foreground p-4 rounded-full shadow-[0_0_30px_rgba(168,85,247,0.5)]">
                       <Play size={28} fill="currentColor" className="ml-1" />
                     </div>
@@ -256,9 +309,29 @@ export function LibraryView() {
                       :{(v.length_seconds % 60).toString().padStart(2, "0")}
                     </Badge>
                   )}
-                  <Badge className="absolute top-2 right-2 text-[10px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-500 border-none">
-                    DOWNLOADED
-                  </Badge>
+                  <div className="absolute top-2 right-2 z-30 flex flex-col items-end gap-1.5 animate-in fade-in zoom-in duration-500">
+                    {v.clip_count && v.clip_count > 0 && (
+                      <Badge className="text-[10px] font-black uppercase tracking-tighter bg-purple-600 text-white border-none shadow-[0_0_15px_rgba(147,51,234,0.5)] px-2 py-0.5">
+                        <Sparkles size={10} className="mr-1 fill-white" />
+                        {v.clip_count} AI CLIPS
+                      </Badge>
+                    )}
+                    {v.has_transcript && (
+                      <Badge className="text-[10px] font-black uppercase tracking-tighter bg-blue-600 text-white border-none shadow-[0_0_15px_rgba(37,99,235,0.4)] px-2 py-0.5">
+                        <Search size={10} className="mr-1" />
+                        Transcript
+                      </Badge>
+                    )}
+                    {!v.clip_count && !v.has_transcript && (
+                      <Badge className="text-[10px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-500 border-border/50 border backdrop-blur-sm">
+                        DOWNLOADED
+                      </Badge>
+                    )}
+                  </div>
+
+                  {v.clip_count && v.clip_count > 0 && (
+                    <div className="absolute inset-0 border-2 border-purple-500/30 rounded-t-lg pointer-events-none z-20 group-hover:border-purple-500/50 transition-colors" />
+                  )}
                 </div>
                 <CardContent className="p-4 flex flex-col justify-between h-[100px]">
                   <h3
