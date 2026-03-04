@@ -11,6 +11,8 @@ import {
   XCircle,
   Search,
   RotateCcw,
+  Trash2,
+  AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -20,6 +22,8 @@ import {
   getClassificationTasks,
   refreshStreamerVods,
   requeueClassification,
+  clearScrapeTasks,
+  clearClassificationTasks,
 } from "../lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -67,6 +71,16 @@ export function StreamerManager() {
   const [newLogin, setNewLogin] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [expandedErrors, setExpandedErrors] = useState<Record<string, boolean>>(
+    {},
+  );
+
+  const toggleError = (taskId: string) => {
+    setExpandedErrors((prev) => ({
+      ...prev,
+      [taskId]: !prev[taskId],
+    }));
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -241,6 +255,19 @@ export function StreamerManager() {
                   Processing
                 </Badge>
               )}
+              {tasks.some((t) => t.status === "Failed") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={async () => {
+                    await clearScrapeTasks();
+                    fetchData();
+                  }}
+                >
+                  <Trash2 size={12} className="mr-1" /> Clear
+                </Button>
+              )}
             </CardTitle>
             <CardDescription>
               Live status of background downloads. You must leave the Python
@@ -303,9 +330,24 @@ export function StreamerManager() {
                       )}
 
                       {t.error_message && (
-                        <p className="text-xs text-destructive bg-destructive/10 p-1.5 rounded mt-1 wrap-break-word">
-                          {t.error_message}
-                        </p>
+                        <div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 p-0 text-[10px] text-destructive hover:bg-transparent"
+                            onClick={() => toggleError(t.id)}
+                          >
+                            <AlertCircle size={10} className="mr-1" />
+                            {expandedErrors[t.id]
+                              ? "Hide error"
+                              : "Show error details"}
+                          </Button>
+                          {expandedErrors[t.id] && (
+                            <p className="text-xs text-destructive bg-destructive/10 p-1.5 rounded mt-1 wrap-break-word font-mono">
+                              {t.error_message}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))
@@ -330,6 +372,19 @@ export function StreamerManager() {
                 >
                   Processing
                 </Badge>
+              )}
+              {classTasks.some((t) => t.status === "Failed") && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={async () => {
+                    await clearClassificationTasks();
+                    fetchData();
+                  }}
+                >
+                  <Trash2 size={12} className="mr-1" /> Clear
+                </Button>
               )}
             </CardTitle>
             <CardDescription>
@@ -368,7 +423,10 @@ export function StreamerManager() {
                           )}
                           {t.status === "InProgress" && (
                             <Badge className="text-[10px] bg-blue-500 hover:bg-blue-600">
-                              <Loader2 size={10} className="mr-1 animate-spin" />{" "}
+                              <Loader2
+                                size={10}
+                                className="mr-1 animate-spin"
+                              />{" "}
                               {t.progress_percent}%
                             </Badge>
                           )}
@@ -378,13 +436,17 @@ export function StreamerManager() {
                             </Badge>
                           )}
                           {t.status === "Failed" && (
-                            <Badge variant="destructive" className="text-[10px]">
+                            <Badge
+                              variant="destructive"
+                              className="text-[10px]"
+                            >
                               <XCircle size={10} className="mr-1" /> Failed
                             </Badge>
                           )}
 
                           {/* Re-classify button for completed or failed tasks */}
-                          {(t.status === "Completed" || t.status === "Failed") && (
+                          {(t.status === "Completed" ||
+                            t.status === "Failed") && (
                             <Button
                               variant="ghost"
                               size="icon"
@@ -395,8 +457,13 @@ export function StreamerManager() {
                                   await requeueClassification(t.video_id);
                                   fetchData();
                                 } catch (e: unknown) {
-                                  const err = e as { response?: { data?: { error?: string } } };
-                                  alert(err.response?.data?.error || "Failed to re-queue");
+                                  const err = e as {
+                                    response?: { data?: { error?: string } };
+                                  };
+                                  alert(
+                                    err.response?.data?.error ||
+                                      "Failed to re-queue",
+                                  );
                                 }
                               }}
                             >
@@ -416,9 +483,24 @@ export function StreamerManager() {
                       )}
 
                       {t.error_message && (
-                        <p className="text-xs text-destructive bg-destructive/10 p-1.5 rounded mt-1 wrap-break-word">
-                          {t.error_message}
-                        </p>
+                        <div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 p-0 text-[10px] text-destructive hover:bg-transparent"
+                            onClick={() => toggleError(t.id)}
+                          >
+                            <AlertCircle size={10} className="mr-1" />
+                            {expandedErrors[t.id]
+                              ? "Hide error"
+                              : "Show error details"}
+                          </Button>
+                          {expandedErrors[t.id] && (
+                            <p className="text-xs text-destructive bg-destructive/10 p-1.5 rounded mt-1 wrap-break-word font-mono">
+                              {t.error_message}
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
                   ))

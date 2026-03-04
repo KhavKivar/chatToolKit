@@ -105,6 +105,16 @@ export const requeueClassification = async (videoId: string) => {
   return response.data;
 };
 
+export const clearScrapeTasks = async () => {
+  const response = await api.post("/scrape-tasks/clear-failed/");
+  return response.data;
+};
+
+export const clearClassificationTasks = async () => {
+  const response = await api.post("/classification-tasks/clear-failed/");
+  return response.data;
+};
+
 export const startScrape = async (videoId: string, oauth?: string) => {
   const response = await api.post(`/videos/scrape/${videoId}/`, { oauth });
   return response.data;

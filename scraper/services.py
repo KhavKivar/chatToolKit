@@ -183,12 +183,12 @@ class TwitchScraperService:
     def fetch_streamer_info(self, login: str) -> Optional[Dict]:
         self.refresh_integrity()
         res = self.fetch_gql({"login": login}, query=GQL_USER_QUERY, operation_name="GetUser")
-        return (res.get("data") or {}).get("user")
+        return ((res or {}).get("data") or {}).get("user")
 
     def fetch_streamer_vods(self, login: str, limit: int = 20) -> List[Dict]:
         self.refresh_integrity()
         res = self.fetch_gql({"login": login, "limit": limit, "cursor": None}, query=GQL_USER_VIDEOS_QUERY, operation_name="GetUserVideos")
-        user_data = (res.get("data") or {}).get("user")
+        user_data = ((res or {}).get("data") or {}).get("user")
         if not user_data: return []
         
         edges = (user_data.get("videos") or {}).get("edges", [])
@@ -238,7 +238,7 @@ class TwitchScraperService:
             if limit_pages and page >= limit_pages: break
             
             res = self.fetch_gql({"videoID": video_id, "cursor": None, "contentOffsetSeconds": offset})
-            data = (res.get("data") or {}).get("video")
+            data = ((res or {}).get("data") or {}).get("video")
             if not data:
                 raise ValueError(f"Video {video_id} not found on Twitch (it may have been deleted or expired).")
             
@@ -247,8 +247,8 @@ class TwitchScraperService:
                 video_data = {
                     "id": video_id,
                     "title": data.get("title"),
-                    "streamer_login": data.get("owner", {}).get("login"),
-                    "streamer_display_name": data.get("owner", {}).get("displayName"),
+                    "streamer_login": (data.get("owner") or {}).get("login"),
+                    "streamer_display_name": (data.get("owner") or {}).get("displayName"),
                     "length_seconds": length_seconds,
                     "created_at": data.get("createdAt"),
                     "thumbnail_url": data.get("previewThumbnailURL")
@@ -274,7 +274,7 @@ class TwitchScraperService:
                     }
                 )
 
-            comments_data = data.get("comments", {})
+            comments_data = data.get("comments") or {}
             edges = comments_data.get("edges") or []
             if not edges: break
             
@@ -336,7 +336,7 @@ class TwitchScraperService:
                     "video_title": video_obj.title if video_obj else "",
                 })
 
-            if not comments_data.get("pageInfo", {}).get("hasNextPage"): break
+            if not (comments_data.get("pageInfo") or {}).get("hasNextPage"): break
             
             offset = max_offset_seen + 1
             page += 1

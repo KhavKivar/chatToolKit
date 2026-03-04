@@ -416,6 +416,15 @@ class ScrapeTaskViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ).order_by('status_order', '-updated_at')
 
+    @action(detail=False, methods=['post'], url_path='clear-failed')
+    def clear_failed(self, request):
+        """
+        Delete all tasks with status 'Failed'.
+        POST /api/scrape-tasks/clear-failed/
+        """
+        deleted, _ = ScrapeTask.objects.filter(status='Failed').delete()
+        return Response({'deleted': deleted}, status=status.HTTP_200_OK)
+
 class ClassificationTaskViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ClassificationTaskSerializer
     filterset_fields = ['video_id', 'status']
@@ -434,6 +443,15 @@ class ClassificationTaskViewSet(viewsets.ReadOnlyModelViewSet):
                 output_field=IntegerField(),
             )
         ).order_by('status_order', '-updated_at')
+
+    @action(detail=False, methods=['post'], url_path='clear-failed')
+    def clear_failed(self, request):
+        """
+        Delete all tasks with status 'Failed'.
+        POST /api/classification-tasks/clear-failed/
+        """
+        deleted, _ = ClassificationTask.objects.filter(status='Failed').delete()
+        return Response({'deleted': deleted}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='requeue')
     def requeue(self, request):
@@ -481,13 +499,79 @@ class TranscriptEntryViewSet(viewsets.ReadOnlyModelViewSet):
         search = self.request.query_params.get('search')
         if search:
             qs = qs.filter(text__icontains=search)
-        
+
         video_id = self.request.query_params.get('video')
         if video_id:
             qs = qs.filter(video_id=video_id)
-            
+
         streamer_id = self.request.query_params.get('streamer')
         if streamer_id:
             qs = qs.filter(streamer_id=streamer_id)
-            
+
         return qs
+
+    @action(detail=False, methods=['post'], url_path='upload')
+    def upload(self, request):
+        """
+        POST /api/transcripts/upload/
+        Body: { "video_id": "...", "entries": [ { "Text": "...", "StartMs": 0, "EndMs": 2000 }, ... ] }
+
+        - Si el VOD no existe en la BD → error 404
+        - Si ya tiene transcripts → los reemplaza (actualiza)
+        - Si no tiene transcripts → los crea
+        """
+        video_id = request.data.get('video_id')
+        entries = request.data.get('entries')
+
+        if not video_id:
+            return Response({'error': 'video_id es requerido'}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(entries, list) or not entries:
+            return Response({'error': 'entries debe ser una lista no vacía'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            video = Video.objects.get(pk=video_id)
+        except Video.DoesNotExist:
+            return Response(
+                {'error': f'El VOD {video_id} no existe en la base de datos'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        streamer = video.streamer
+        if not streamer:
+            return Response(
+                {'error': f'El VOD {video_id} no tiene streamer asociado en la base de datos'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        existing_count = TranscriptEntry.objects.filter(video=video).count()
+        is_update = existing_count > 0
+
+        if is_update:
+            TranscriptEntry.objects.filter(video=video).delete()
+
+        new_entries = []
+        for item in entries:
+            start_ms = item.get('StartMs') if item.get('StartMs') is not None else item.get('start_ms', 0)
+            end_ms = item.get('EndMs') if item.get('EndMs') is not None else item.get('end_ms', 0)
+            text = item.get('Text') if item.get('Text') is not None else item.get('text', '')
+            new_entries.append(TranscriptEntry(
+                video=video,
+                streamer=streamer,
+                start_seconds=float(start_ms) / 1000.0,
+                end_seconds=float(end_ms) / 1000.0,
+                text=text,
+            ))
+
+        TranscriptEntry.objects.bulk_create(new_entries)
+
+        action_taken = 'actualizado' if is_update else 'creado'
+        http_status = status.HTTP_200_OK if is_update else status.HTTP_201_CREATED
+        return Response(
+            {
+                'message': f'Transcript {action_taken} para VOD {video_id}',
+                'video_id': video_id,
+                'entries_saved': len(new_entries),
+                'action': action_taken,
+            },
+            status=http_status
+        )
