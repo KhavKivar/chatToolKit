@@ -213,6 +213,9 @@ export function GlobalSearch() {
   const searchParams = useSearchParams();
   const [streamers, setStreamers] = React.useState<Streamer[]>([]);
 
+  // Sentinel ref for infinite scroll
+  const sentinelRef = React.useRef<HTMLDivElement>(null);
+
   const [contextModalOpen, setContextModalOpen] = React.useState(false);
   const [contextComments, setContextComments] = React.useState<Comment[]>([]);
   const [contextLoading, setContextLoading] = React.useState(false);
@@ -311,7 +314,8 @@ export function GlobalSearch() {
         const allTranscriptMatches: TranscriptMatch[] = [];
         let page = startPage;
         let hasMoreOnServer = true;
-        const BATCH_SIZE = 50;
+        // Smaller initial batch so first results appear fast; infinite scroll loads more
+        const BATCH_SIZE = isLoadMore ? 8 : 4;
 
         while (hasMoreOnServer && page <= startPage + BATCH_SIZE - 1) {
           // 1. Fetch Comments
@@ -415,23 +419,14 @@ export function GlobalSearch() {
           dispatch(setLastScannedPage(page));
           dispatch(setCanScanMore(hasMoreOnServer));
 
-          const totalMatchesThisJob =
-            allCommentMatches.length + allTranscriptMatches.length;
-          const minMatchesDesired = 300; // Scan deeper initially
-          const minPagesToScan = 10; // Scan at least 10 pages to reach farther into the past
-
-          if (
-            (totalMatchesThisJob >= minMatchesDesired &&
-              page - startPage + 1 >= minPagesToScan) ||
-            !hasMoreOnServer
-          ) {
+          if (!hasMoreOnServer) {
             break;
           }
 
           page++;
           dispatch(
             setSearchProgress(
-              `Scanning ${onlyTranscripts ? "transcripts" : "chats"}... Checked ${page * 500} records...`,
+              `Scanning page ${page}... (${allCommentMatches.length + allTranscriptMatches.length} matches so far)`,
             ),
           );
         }
@@ -586,6 +581,24 @@ export function GlobalSearch() {
     const newUrl = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
     window.history.replaceState(null, "", newUrl);
   }, [keywords, streamerFilter, searchParams, excludedUsers]);
+
+  // Infinite scroll: auto-load more when sentinel enters viewport
+  React.useEffect(() => {
+    if (!canScanMore || loading || isScanningMore || !searched) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleSearch(true);
+        }
+      },
+      { threshold: 0.1 },
+    );
+
+    const sentinel = sentinelRef.current;
+    if (sentinel) observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [canScanMore, loading, isScanningMore, searched, handleSearch]);
 
   return (
     <div className="space-y-6">
@@ -1109,33 +1122,9 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {/* Manual Load More Button */}
+          {/* Infinite scroll sentinel — triggers auto-load when visible */}
           {canScanMore && !loading && !isScanningMore && (
-            <div className="py-12 flex flex-col items-center justify-center gap-4 bg-muted/20 rounded-3xl mt-8 border border-dashed border-border/50">
-              <Button
-                size="lg"
-                onClick={() => handleSearch(true)}
-                className="group relative h-14 px-10 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-primary hover:scale-105"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 rounded-full bg-white/20">
-                    <Search size={16} className="text-white" />
-                  </div>
-                  <span className="font-bold text-lg text-white">
-                    Scan More Past VODs
-                  </span>
-                </div>
-              </Button>
-              <div className="text-center space-y-1">
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest opacity-70">
-                  Reached end of current scan batch
-                </p>
-                <p className="text-[10px] text-muted-foreground/50">
-                  Currently showing {totalMatches} matches from {groups.length}{" "}
-                  videos
-                </p>
-              </div>
-            </div>
+            <div ref={sentinelRef} className="h-16" />
           )}
 
           {/* Incremental Scan Status */}
