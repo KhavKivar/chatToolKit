@@ -417,8 +417,8 @@ export function GlobalSearch() {
 
           const totalMatchesThisJob =
             allCommentMatches.length + allTranscriptMatches.length;
-          const minMatchesDesired = 100; // Scan at least until we have 100 results
-          const minPagesToScan = 3; // Or at least scan 3 pages to be thorough
+          const minMatchesDesired = 300; // Scan deeper initially
+          const minPagesToScan = 10; // Scan at least 10 pages to reach farther into the past
 
           if (
             (totalMatchesThisJob >= minMatchesDesired &&
@@ -946,9 +946,9 @@ export function GlobalSearch() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none">
-                          {group.comments.length} match
-                          {group.comments.length !== 1 ? "es" : ""}
+                        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none shrink-0">
+                          {group.comments.length + group.transcripts.length}{" "}
+                          matches
                         </Badge>
                         <a
                           href={`https://www.twitch.tv/videos/${group.video_id}`}
@@ -1111,48 +1111,68 @@ export function GlobalSearch() {
 
           {/* Manual Load More Button */}
           {canScanMore && !loading && !isScanningMore && (
-            <div className="py-12 flex flex-col items-center justify-center gap-4">
+            <div className="py-12 flex flex-col items-center justify-center gap-4 bg-muted/20 rounded-3xl mt-8 border border-dashed border-border/50">
               <Button
                 size="lg"
-                variant="outline"
                 onClick={() => handleSearch(true)}
-                className="group relative h-12 px-8 rounded-full border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300"
+                className="group relative h-14 px-10 rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 bg-primary hover:scale-105"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-1.5 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
-                    <Search size={14} />
+                  <div className="p-1.5 rounded-full bg-white/20">
+                    <Search size={16} className="text-white" />
                   </div>
-                  <span className="font-bold tracking-tight">
-                    Scan More Results
+                  <span className="font-bold text-lg text-white">
+                    Scan More Past VODs
                   </span>
                 </div>
               </Button>
-              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium opacity-50">
-                Found {totalMatches} results in current scan
-              </p>
+              <div className="text-center space-y-1">
+                <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest opacity-70">
+                  Reached end of current scan batch
+                </p>
+                <p className="text-[10px] text-muted-foreground/50">
+                  Currently showing {totalMatches} matches from {groups.length}{" "}
+                  videos
+                </p>
+              </div>
             </div>
           )}
 
           {/* Incremental Scan Status */}
           {(loading || isScanningMore) && (
             <div className="py-12 flex flex-col items-center justify-center gap-4">
-              <div className="flex flex-col items-center gap-3 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card border border-border/50 px-8 py-5 rounded-2xl shadow-lg">
-                <div className="flex items-center gap-3">
-                  <Loader2 size={20} className="animate-spin text-primary" />
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {isScanningMore ? "Scanning deeper..." : "Searching..."}
+              <div className="flex flex-col items-center gap-4 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card border border-border/50 px-10 py-8 rounded-3xl shadow-2xl min-w-[300px]">
+                <div className="bg-primary/10 p-4 rounded-full animate-pulse">
+                  <Loader2 size={32} className="animate-spin text-primary" />
+                </div>
+                <div className="text-center">
+                  <p className="text-md font-bold text-foreground">
+                    {isScanningMore
+                      ? "Searching in older VODs..."
+                      : "Initializing Library Search..."}
+                  </p>
+                  {searchProgress && (
+                    <p className="text-xs opacity-60 mt-1 font-mono">
+                      {searchProgress}
                     </p>
-                    {searchProgress && (
-                      <p className="text-[11px] opacity-60 mt-0.5">
-                        {searchProgress}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
+
+          {!canScanMore &&
+            searched &&
+            groups.length > 0 &&
+            !loading &&
+            !isScanningMore && (
+              <div className="py-12 flex flex-col items-center gap-2 opacity-30">
+                <Separator className="w-24 mb-2" />
+                <p className="text-[10px] font-black uppercase tracking-[0.2em]">
+                  Full library has been scanned
+                </p>
+              </div>
+            )}
         </div>
       )}
 
