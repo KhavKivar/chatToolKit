@@ -561,31 +561,6 @@ export function GlobalSearch() {
     init();
   }, [dispatch, searchParams]);
 
-  // Intersection Observer for incremental scanning
-  const searchObserverTarget = React.useRef(null);
-  React.useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          canScanMore &&
-          !loading &&
-          !isScanningMore &&
-          searched
-        ) {
-          handleSearch(true);
-        }
-      },
-      { threshold: 0.1, rootMargin: "400px" },
-    );
-
-    if (searchObserverTarget.current) {
-      observer.observe(searchObserverTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [canScanMore, loading, isScanningMore, searched, handleSearch]);
-
   React.useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
 
@@ -1134,18 +1109,39 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {/* Incremental Scan Sentinel */}
-          <div
-            ref={searchObserverTarget}
-            className="py-12 flex flex-col items-center justify-center gap-4"
-          >
-            {isScanningMore && (
+          {/* Manual Load More Button */}
+          {canScanMore && !loading && !isScanningMore && (
+            <div className="py-12 flex flex-col items-center justify-center gap-4">
+              <Button
+                size="lg"
+                variant="outline"
+                onClick={() => handleSearch(true)}
+                className="group relative h-12 px-8 rounded-full border-primary/20 hover:border-primary/50 hover:bg-primary/5 transition-all duration-300"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-300">
+                    <Search size={14} />
+                  </div>
+                  <span className="font-bold tracking-tight">
+                    Scan More Results
+                  </span>
+                </div>
+              </Button>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium opacity-50">
+                Found {totalMatches} results in current scan
+              </p>
+            </div>
+          )}
+
+          {/* Incremental Scan Status */}
+          {(loading || isScanningMore) && (
+            <div className="py-12 flex flex-col items-center justify-center gap-4">
               <div className="flex flex-col items-center gap-3 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card border border-border/50 px-8 py-5 rounded-2xl shadow-lg">
                 <div className="flex items-center gap-3">
                   <Loader2 size={20} className="animate-spin text-primary" />
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      Loading more results...
+                      {isScanningMore ? "Scanning deeper..." : "Searching..."}
                     </p>
                     {searchProgress && (
                       <p className="text-[11px] opacity-60 mt-0.5">
@@ -1155,20 +1151,8 @@ export function GlobalSearch() {
                   </div>
                 </div>
               </div>
-            )}
-            {!canScanMore &&
-              searched &&
-              groups.length > 0 &&
-              !loading &&
-              !isScanningMore && (
-                <div className="flex flex-col items-center gap-2 opacity-30">
-                  <Separator className="w-24 mb-2" />
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em]">
-                    End of trackable library
-                  </p>
-                </div>
-              )}
-          </div>
+            </div>
+          )}
         </div>
       )}
 
