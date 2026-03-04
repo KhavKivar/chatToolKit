@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { MessageSquare, Loader2, Search, X } from "lucide-react";
 import { getVideoComments } from "../lib/api";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface Comment {
@@ -24,6 +23,7 @@ export default function CommentList({ videoId }: { videoId: string }) {
   const [hasNextPage, setHasNextPage] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   const fetchComments = useCallback(
     async (pageNum: number, isInitial = false) => {
@@ -33,7 +33,6 @@ export default function CommentList({ videoId }: { videoId: string }) {
       try {
         const data = await getVideoComments(videoId, pageNum, activeSearch);
         const newComments = data.results || [];
-
         setComments((prev) =>
           isInitial ? newComments : [...prev, ...newComments],
         );
@@ -49,55 +48,27 @@ export default function CommentList({ videoId }: { videoId: string }) {
     [videoId, activeSearch],
   );
 
-  // Initial load or search change
   useEffect(() => {
     setComments([]);
     setPage(1);
     fetchComments(1, true);
   }, [videoId, activeSearch, fetchComments]);
 
-  // Intersection Observer for infinite scroll
-  const observerTarget = React.useRef(null);
-
+  // Debounce search
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (
-          entries[0].isIntersecting &&
-          hasNextPage &&
-          !loading &&
-          !isFetchingNext
-        ) {
-          fetchComments(page + 1);
-        }
-      },
-      { threshold: 0.1, rootMargin: "200px" },
-    );
-
-    if (observerTarget.current) {
-      observer.observe(observerTarget.current);
-    }
-
-    return () => observer.disconnect();
-  }, [hasNextPage, loading, isFetchingNext, page, fetchComments]);
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setActiveSearch(searchQuery);
-    }, 400);
-
+    const timer = setTimeout(() => setActiveSearch(searchQuery), 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setActiveSearch(searchQuery);
-  };
+  // Scroll-based infinite load
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || !hasNextPage || isFetchingNext || loading) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 300;
+    if (nearBottom) fetchComments(page + 1);
+  }, [hasNextPage, isFetchingNext, loading, page, fetchComments]);
 
-  const clearSearch = () => {
-    setSearchQuery("");
-  };
+  const clearSearch = () => setSearchQuery("");
 
   const formatTime = (seconds: number) => {
     const h = Math.floor(seconds / 3600);
@@ -123,7 +94,13 @@ export default function CommentList({ videoId }: { videoId: string }) {
           </div>
         </div>
 
-        <form onSubmit={handleSearch} className="relative group">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setActiveSearch(searchQuery);
+          }}
+          className="relative group"
+        >
           <Input
             placeholder="Search in this chat..."
             value={searchQuery}
@@ -147,11 +124,33 @@ export default function CommentList({ videoId }: { videoId: string }) {
       </CardHeader>
 
       <CardContent className="flex-1 overflow-hidden pt-0">
-        <ScrollArea
-          className="h-[calc(100vh-320px)] pr-4"
+        <div
+          ref={scrollRef}
+          onScroll={handleScroll}
+          className="h-[calc(100vh-320px)] overflow-y-auto pr-4"
           style={{ overscrollBehavior: "contain" }}
         >
           <div className="space-y-3">
+            {loading && comments.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground animate-pulse">
+                <Loader2 className="animate-spin mb-3 text-primary" size={24} />
+                <p className="text-[10px] font-bold uppercase tracking-widest">
+                  Loading messages...
+                </p>
+              </div>
+            )}
+
+            {!loading && comments.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground border-2 border-dashed border-border/50 rounded-xl">
+                <Search size={32} className="mb-4 opacity-20" />
+                <p className="text-xs font-medium italic">
+                  {activeSearch
+                    ? `No matches for "${activeSearch}"`
+                    : "This chat is empty"}
+                </p>
+              </div>
+            )}
+
             {comments.map((c) => (
               <div
                 key={c.id}
@@ -167,7 +166,6 @@ export default function CommentList({ videoId }: { videoId: string }) {
                   <span className="text-foreground/90 wrap-break-word">
                     {c.message}
                   </span>
-
                   {c.toxicity_score !== undefined &&
                     c.toxicity_score !== null && (
                       <div className="mt-1 flex gap-1">
@@ -181,8 +179,8 @@ export default function CommentList({ videoId }: { videoId: string }) {
                           </span>
                         ) : (
                           <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                            Non Toxic {Math.round((1 - c.toxicity_score) * 100)}
-                            %
+                            Non Toxic{" "}
+                            {Math.round((1 - c.toxicity_score) * 100)}%
                           </span>
                         )}
                       </div>
@@ -191,48 +189,22 @@ export default function CommentList({ videoId }: { videoId: string }) {
               </div>
             ))}
 
-            {/* Infinite Scroll Sentinel */}
-            <div
-              ref={observerTarget}
-              className="h-20 flex items-center justify-center"
-            >
-              {isFetchingNext && (
-                <div className="flex items-center gap-2 text-muted-foreground animate-pulse">
-                  <Loader2 className="animate-spin" size={16} />
-                  <span className="text-[10px] font-bold uppercase tracking-widest">
-                    Loading more...
-                  </span>
-                </div>
-              )}
-              {!hasNextPage && comments.length > 0 && (
-                <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40">
-                  End of chat
-                </p>
-              )}
-              {loading && comments.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground animate-pulse w-full">
-                  <Loader2
-                    className="animate-spin mb-3 text-primary"
-                    size={24}
-                  />
-                  <p className="text-[10px] font-bold uppercase tracking-widest">
-                    Loading messages...
-                  </p>
-                </div>
-              )}
-              {!loading && comments.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-20 text-muted-foreground border-2 border-dashed border-border/50 rounded-xl w-full">
-                  <Search size={32} className="mb-4 opacity-20" />
-                  <p className="text-xs font-medium italic">
-                    {activeSearch
-                      ? `No matches for "${activeSearch}"`
-                      : "This chat is empty"}
-                  </p>
-                </div>
-              )}
-            </div>
+            {isFetchingNext && (
+              <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground animate-pulse">
+                <Loader2 className="animate-spin" size={16} />
+                <span className="text-[10px] font-bold uppercase tracking-widest">
+                  Loading more...
+                </span>
+              </div>
+            )}
+
+            {!hasNextPage && comments.length > 0 && (
+              <p className="text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 py-4">
+                End of chat
+              </p>
+            )}
           </div>
-        </ScrollArea>
+        </div>
       </CardContent>
     </Card>
   );

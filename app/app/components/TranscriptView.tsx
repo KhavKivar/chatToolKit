@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Search, Clapperboard, RefreshCcw, ExternalLink } from "lucide-react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { Search, Clapperboard, RefreshCcw, ExternalLink, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { getTranscripts } from "../lib/api";
 import { Badge } from "@/components/ui/badge";
 
@@ -22,16 +21,46 @@ interface TranscriptViewProps {
 export function TranscriptView({ videoId }: TranscriptViewProps) {
   const [entries, setEntries] = useState<TranscriptEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isFetchingNext, setIsFetchingNext] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(false);
   const [search, setSearch] = useState("");
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const fetchEntries = useCallback(
+    async (pageNum: number, isInitial = false) => {
+      if (isInitial) setLoading(true);
+      else setIsFetchingNext(true);
+
+      try {
+        const data = await getTranscripts({ video: videoId, page: pageNum });
+        const newEntries: TranscriptEntry[] = data.results ?? data;
+        setEntries((prev) => (isInitial ? newEntries : [...prev, ...newEntries]));
+        setHasNextPage(!!data.next);
+        setPage(pageNum);
+      } catch (err) {
+        console.error("Failed to fetch transcripts:", err);
+      } finally {
+        setLoading(false);
+        setIsFetchingNext(false);
+      }
+    },
+    [videoId],
+  );
 
   useEffect(() => {
-    getTranscripts({ video: videoId })
-      .then((res) => {
-        setEntries(res.results || res);
-      })
-      .catch((err) => console.error("Failed to fetch transcripts:", err))
-      .finally(() => setLoading(false));
-  }, [videoId]);
+    setEntries([]);
+    setPage(1);
+    fetchEntries(1, true);
+  }, [videoId, fetchEntries]);
+
+  // Scroll-based infinite load
+  const handleScroll = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el || !hasNextPage || isFetchingNext || loading) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 300;
+    if (nearBottom) fetchEntries(page + 1);
+  }, [hasNextPage, isFetchingNext, loading, page, fetchEntries]);
 
   const filteredEntries = entries.filter((e) =>
     e.text.toLowerCase().includes(search.toLowerCase()),
@@ -55,7 +84,7 @@ export function TranscriptView({ videoId }: TranscriptViewProps) {
     );
   }
 
-  if (entries.length === 0) {
+  if (!loading && entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-4 bg-muted/30 rounded-xl border border-dashed">
         <div className="p-4 bg-muted rounded-full">
@@ -93,7 +122,11 @@ export function TranscriptView({ videoId }: TranscriptViewProps) {
         </Badge>
       </div>
 
-      <ScrollArea className="h-[65vh] pr-4 border rounded-xl bg-card/30">
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="h-[65vh] overflow-y-auto pr-4 border rounded-xl bg-card/30"
+      >
         <div className="space-y-1 p-2">
           {filteredEntries.map((entry) => (
             <div
@@ -120,13 +153,29 @@ export function TranscriptView({ videoId }: TranscriptViewProps) {
               </div>
             </div>
           ))}
-          {filteredEntries.length === 0 && (
+
+          {filteredEntries.length === 0 && search && (
             <div className="py-20 text-center text-muted-foreground italic">
               No matches found for &quot;{search}&quot;
             </div>
           )}
+
+          {isFetchingNext && (
+            <div className="flex items-center justify-center gap-2 py-4 text-muted-foreground animate-pulse">
+              <Loader2 className="animate-spin" size={16} />
+              <span className="text-[10px] font-bold uppercase tracking-widest">
+                Loading more...
+              </span>
+            </div>
+          )}
+
+          {!hasNextPage && entries.length > 0 && !search && (
+            <p className="text-center text-[10px] font-bold uppercase tracking-widest text-muted-foreground/40 py-4">
+              End of transcript
+            </p>
+          )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
