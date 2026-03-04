@@ -314,8 +314,8 @@ export function GlobalSearch() {
         const allTranscriptMatches: TranscriptMatch[] = [];
         let page = startPage;
         let hasMoreOnServer = true;
-        // Smaller initial batch so first results appear fast; infinite scroll loads more
-        const BATCH_SIZE = isLoadMore ? 8 : 4;
+        // Scan enough pages to cover multiple VODs; infinite scroll loads even more
+        const BATCH_SIZE = isLoadMore ? 15 : 10;
 
         while (hasMoreOnServer && page <= startPage + BATCH_SIZE - 1) {
           // 1. Fetch Comments
@@ -811,6 +811,14 @@ export function GlobalSearch() {
                       </strong>
                       <span>video{groups.length !== 1 ? "s" : ""}</span>
                     </div>
+                    {canScanMore && (
+                      <>
+                        <span className="text-border">|</span>
+                        <span className="text-[11px] text-amber-500 dark:text-amber-400 font-semibold animate-pulse">
+                          ↓ older VODs not yet scanned
+                        </span>
+                      </>
+                    )}
                     {streamerFilter && (
                       <>
                         <span className="text-border">|</span>
@@ -1124,7 +1132,13 @@ export function GlobalSearch() {
 
           {/* Infinite scroll sentinel — triggers auto-load when visible */}
           {canScanMore && !loading && !isScanningMore && (
-            <div ref={sentinelRef} className="h-16" />
+            <div
+              ref={sentinelRef}
+              className="py-6 flex items-center justify-center gap-2 text-xs text-muted-foreground/60 font-medium"
+            >
+              <Loader2 size={13} className="animate-spin opacity-40" />
+              <span>Scroll down to load older VODs...</span>
+            </div>
           )}
 
           {/* Incremental Scan Status */}
