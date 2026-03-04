@@ -11,8 +11,8 @@ jobs:
       - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
-          host: 44.200.127.170
-          username: ubuntu
+          host: 168.129.176.107
+          username: opc
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /home/ubuntu/chat-download
