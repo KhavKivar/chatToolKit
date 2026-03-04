@@ -49,11 +49,19 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.SUCCESS(f"Successfully completed task for Video ID: {task.video_id}"))
                 
             except Exception as e:
-                # Mark failed
-                task.status = 'Failed'
-                task.error_message = str(e)
-                task.save()
-                self.stdout.write(self.style.ERROR(f"Failed task for Video ID: {task.video_id}. Error: {e}"))
+                error_msg = str(e)
+                # VOD deleted/expired from Twitch — not a real failure, just skip it
+                if "not found on Twitch" in error_msg or "deleted or expired" in error_msg:
+                    task.status = 'Completed'
+                    task.progress_percent = 100
+                    task.error_message = "VOD no longer available on Twitch (deleted or expired)."
+                    task.save()
+                    self.stdout.write(self.style.WARNING(f"Skipped VOD {task.video_id}: no longer on Twitch."))
+                else:
+                    task.status = 'Failed'
+                    task.error_message = error_msg
+                    task.save()
+                    self.stdout.write(self.style.ERROR(f"Failed task for Video ID: {task.video_id}. Error: {e}"))
             
             finally:
                 # Small pause between tasks to avoid hammering the DB or Twitch
