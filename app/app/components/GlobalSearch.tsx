@@ -11,6 +11,7 @@ import {
   X,
   MessageSquare,
   Sparkles,
+  ChevronDown,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -215,6 +216,32 @@ export function GlobalSearch() {
 
   // Sentinel ref for infinite scroll
   const sentinelRef = React.useRef<HTMLDivElement>(null);
+
+  // Accordion state: set of expanded video_ids
+  const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(
+    new Set(),
+  );
+
+  const toggleGroup = (videoId: string) => {
+    setExpandedGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(videoId)) next.delete(videoId);
+      else next.add(videoId);
+      return next;
+    });
+  };
+
+  // Auto-expand groups when new results arrive
+  React.useEffect(() => {
+    if (groups.length > 0) {
+      setExpandedGroups((prev) => {
+        const next = new Set(prev);
+        // Only auto-expand the first group if nothing is expanded yet
+        if (next.size === 0) next.add(groups[0].video_id);
+        return next;
+      });
+    }
+  }, [groups]);
 
   const [contextModalOpen, setContextModalOpen] = React.useState(false);
   const [contextComments, setContextComments] = React.useState<Comment[]>([]);
@@ -930,14 +957,19 @@ export function GlobalSearch() {
           {/* Results cards */}
           {groups.length > 0 && (
             <div className="space-y-4">
-              {groups.map((group, groupIdx) => (
+              {groups.map((group, groupIdx) => {
+                const isExpanded = expandedGroups.has(group.video_id);
+                return (
                 <Card
                   key={group.video_id}
                   className="overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 border-border/60 hover:border-border transition-colors"
                   style={{ animationDelay: `${groupIdx * 50}ms` }}
                 >
-                  {/* Video header */}
-                  <CardHeader className="py-4 bg-linear-to-r from-muted/30 to-transparent">
+                  {/* Video header — click to expand/collapse */}
+                  <CardHeader
+                    className="py-4 bg-linear-to-r from-muted/30 to-transparent cursor-pointer select-none hover:bg-muted/30 transition-colors"
+                    onClick={() => toggleGroup(group.video_id)}
+                  >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="bg-purple-600/10 p-2 rounded-lg shrink-0">
@@ -980,11 +1012,16 @@ export function GlobalSearch() {
                         >
                           VOD <ExternalLink size={10} />
                         </a>
+                        <ChevronDown
+                          size={16}
+                          className={`text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                        />
                       </div>
                     </div>
                   </CardHeader>
 
-                  {/* Results list */}
+                  {/* Results list — only rendered when expanded */}
+                  {isExpanded && (
                   <CardContent className="pt-0 pb-4 px-4 overflow-hidden">
                     <div className="space-y-4">
                       {/* Comments Section */}
@@ -1125,8 +1162,10 @@ export function GlobalSearch() {
                       )}
                     </div>
                   </CardContent>
+                  )}
                 </Card>
-              ))}
+                );
+              })}
             </div>
           )}
 
