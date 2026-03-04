@@ -944,8 +944,8 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {/* No results */}
-          {groups.length === 0 && searched && !loading && (
+          {/* No results — only shown once all pages are exhausted */}
+          {groups.length === 0 && searched && !loading && !isScanningMore && !canScanMore && (
             <Card className="border-dashed">
               <CardContent className="py-16 flex flex-col items-center gap-4 text-muted-foreground">
                 <div className="bg-muted/50 p-4 rounded-full">
@@ -1191,8 +1191,8 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {/* Incremental Scan Status */}
-          {(loading || isScanningMore) && (
+          {/* Incremental Scan Status — only shown when there are results above (avoids flicker) */}
+          {(loading || isScanningMore) && groups.length > 0 && (
             <div className="py-12 flex flex-col items-center justify-center gap-4">
               <div className="flex flex-col items-center gap-4 text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card border border-border/50 px-10 py-8 rounded-3xl shadow-2xl min-w-[300px]">
                 <div className="bg-primary/10 p-4 rounded-full animate-pulse">
