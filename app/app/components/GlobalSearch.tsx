@@ -604,164 +604,107 @@ export function GlobalSearch() {
             % similarity are shown, grouped by video.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
+          {/* ── Keyword input ── */}
           <div className="flex gap-2">
             <Input
-              placeholder='Type a keyword and press Enter (e.g. "gg", "pog", "hack")...'
+              placeholder='Add keyword and press Enter (e.g. "gg", "pog", "hack")...'
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && addKeyword()}
+              className="h-10"
             />
-            <Button
-              variant="outline"
-              onClick={addKeyword}
-              disabled={!input.trim()}
-            >
-              <Tag size={15} className="mr-1" /> Add
+            <Button variant="outline" onClick={addKeyword} disabled={!input.trim()} className="shrink-0 h-10">
+              <Tag size={14} className="mr-1.5" /> Add
             </Button>
           </div>
 
-          <div className="flex gap-2">
-            <Input
-              placeholder='Exclude users (e.g. "missyl0l") and press Enter...'
-              value={excludedUsersInput}
-              onChange={(e) => setExcludedInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addExcludedUser()}
-            />
-            <Button
-              variant="outline"
-              onClick={addExcludedUser}
-              disabled={!excludedUsersInput.trim()}
-            >
-              <X size={15} className="mr-1" /> Exclude
-            </Button>
-          </div>
-
-          <div className="flex flex-wrap gap-4 items-center">
+          {/* ── Options row: streamer + toxic + exclude ── */}
+          <div className="flex flex-wrap gap-2 items-center">
+            {/* Streamer filter */}
             <select
-              className="flex h-10 w-full md:w-[250px] items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               value={streamerFilter}
-              onChange={(e) => {
-                const newFilter = e.target.value;
-                dispatch(setStreamerFilter(newFilter));
-              }}
+              onChange={(e) => dispatch(setStreamerFilter(e.target.value))}
             >
-              <option value="">Filter by: All Streamers</option>
+              <option value="">All Streamers</option>
               {streamers.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.display_name}
-                </option>
+                <option key={s.id} value={s.id}>{s.display_name}</option>
               ))}
             </select>
 
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="toxic-only"
-                checked={toxicOnly}
-                onChange={(e) => {
-                  const val = e.target.checked;
-                  dispatch(setToxicOnly(val));
-                }}
-                className="w-4 h-4 rounded border-gray-300 text-primary focus:ring-primary cursor-pointer"
-              />
-              <label
-                htmlFor="toxic-only"
-                className="text-sm font-medium leading-none cursor-pointer flex items-center gap-1.5"
-              >
-                <span className="text-red-500 font-bold">Toxic Only</span>
-                <span className="text-[10px] text-muted-foreground bg-muted px-1.5 rounded uppercase tracking-tighter">
-                  Pro
-                </span>
-              </label>
+            {/* Toxic toggle */}
+            <button
+              onClick={() => dispatch(setToxicOnly(!toxicOnly))}
+              className={`h-9 px-3 rounded-md border text-xs font-bold transition-colors ${
+                toxicOnly
+                  ? "bg-red-500/10 border-red-500/30 text-red-500"
+                  : "border-input text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🔴 Toxic Only
+            </button>
 
-              {toxicOnly && (
-                <div className="flex items-center gap-2 border-l border-border/50 pl-3 ml-1 animate-in slide-in-from-left-2 duration-200">
-                  <span className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">
-                    Threshold:
-                  </span>
-                  <select
-                    value={toxicityThreshold}
-                    onChange={(e) =>
-                      dispatch(setToxicityThreshold(Number(e.target.value)))
-                    }
-                    className="h-7 bg-red-500/5 border border-red-500/10 text-[11px] font-bold rounded-md px-2 focus:outline-none focus:ring-1 focus:ring-red-500/30 text-red-500 cursor-pointer hover:bg-red-500/10 transition-colors"
-                  >
-                    <option value={70}>70%+</option>
-                    <option value={80}>80%+</option>
-                    <option value={90}>90%+</option>
-                  </select>
-                </div>
-              )}
+            {/* Threshold — only when toxic */}
+            {toxicOnly && (
+              <select
+                value={toxicityThreshold}
+                onChange={(e) => dispatch(setToxicityThreshold(Number(e.target.value)))}
+                className="h-9 bg-red-500/5 border border-red-500/20 text-xs font-bold rounded-md px-2 focus:outline-none text-red-500 cursor-pointer"
+              >
+                <option value={70}>≥70%</option>
+                <option value={80}>≥80%</option>
+                <option value={90}>≥90%</option>
+              </select>
+            )}
+
+            {/* Exclude users — compact inline */}
+            <div className="flex gap-1 ml-auto">
+              <Input
+                placeholder="Exclude user..."
+                value={excludedUsersInput}
+                onChange={(e) => setExcludedInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addExcludedUser()}
+                className="h-9 w-36 text-xs"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={addExcludedUser}
+                disabled={!excludedUsersInput.trim()}
+                className="h-9 px-2 text-muted-foreground hover:text-destructive"
+                title="Exclude user"
+              >
+                <X size={14} />
+              </Button>
             </div>
           </div>
 
-          {keywords.length > 0 || excludedUsers.length > 0 || toxicOnly ? (
-            <div className="flex flex-col gap-2">
-              {keywords.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-muted-foreground self-center mr-1">
-                    Search:
-                  </span>
-                  {keywords.map((kw) => (
-                    <Badge
-                      key={kw}
-                      variant="secondary"
-                      className="gap-1.5 px-3 py-1 text-sm bg-primary/10 border-primary/20"
-                    >
-                      {kw}
-                      <button
-                        onClick={() => removeKeyword(kw)}
-                        className="ml-1 hover:text-destructive transition-colors"
-                      >
-                        <X size={11} />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {toxicOnly && keywords.length === 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-muted-foreground self-center mr-1">
-                    Mode:
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className="gap-1.5 px-3 py-1 text-sm bg-red-500/10 text-red-500 border-red-500/20"
-                  >
-                    All Toxic Comments
-                  </Badge>
-                </div>
-              )}
-              {excludedUsers.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  <span className="text-xs text-muted-foreground self-center mr-1">
-                    Excl.:
-                  </span>
-                  {excludedUsers.map((u) => (
-                    <Badge
-                      key={u}
-                      variant="destructive"
-                      className="gap-1.5 dark:text-white px-3 py-1 text-sm bg-destructive/10 text-destructive hover:bg-destructive/20 border-destructive/20"
-                    >
-                      {u}
-                      <button
-                        onClick={() => removeExcludedUser(u)}
-                        className="ml-1 hover:text-destructive transition-colors"
-                      >
-                        <X size={11} />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
+          {/* ── Chips: keywords + excluded users ── */}
+          {(keywords.length > 0 || excludedUsers.length > 0) && (
+            <div className="flex flex-wrap gap-1.5 p-2 bg-muted/20 rounded-lg border border-border/40">
+              {keywords.map((kw) => (
+                <Badge key={kw} variant="secondary" className="gap-1 bg-primary/10 border-primary/20 text-xs">
+                  <Tag size={10} className="text-primary" />
+                  {kw}
+                  <button onClick={() => removeKeyword(kw)} className="ml-0.5 hover:text-destructive">
+                    <X size={10} />
+                  </button>
+                </Badge>
+              ))}
+              {excludedUsers.map((u) => (
+                <Badge key={u} variant="secondary" className="gap-1 bg-destructive/10 border-destructive/20 text-destructive text-xs">
+                  <X size={10} />
+                  {u}
+                  <button onClick={() => removeExcludedUser(u)} className="ml-0.5 hover:opacity-70">
+                    <X size={10} />
+                  </button>
+                </Badge>
+              ))}
             </div>
-          ) : !loading ? (
-            <p className="text-sm text-muted-foreground italic">
-              No keywords or exclusions yet — add some above.
-            </p>
-          ) : null}
+          )}
 
+          {/* ── Search button ── */}
           <Button
             className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
             onClick={() => handleSearch()}
@@ -777,12 +720,10 @@ export function GlobalSearch() {
                 <Search size={16} className="mr-2" />
                 {streamerFilter
                   ? `Search in @${streamers.find((s) => s.id === streamerFilter)?.display_name || "Streamer"}'s Chats`
-                  : `Search in All Chats`}{" "}
+                  : "Search in All Chats"}
                 {keywords.length > 0
-                  ? `(${keywords.length} keyword${keywords.length !== 1 ? "s" : ""})`
-                  : toxicOnly
-                    ? "(Toxic only)"
-                    : ""}
+                  ? ` (${keywords.length} keyword${keywords.length !== 1 ? "s" : ""})`
+                  : toxicOnly ? " (Toxic only)" : ""}
               </>
             )}
           </Button>
