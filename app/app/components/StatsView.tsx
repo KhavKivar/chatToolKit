@@ -126,11 +126,6 @@ interface StatsData {
   top_videos_by_volume: StatItem[];
   hourly_stats: StatItem[];
   total_videos: number;
-  funny_stats?: {
-    laugh_vs_cry: { laugh: number; cry: number };
-    longest_segment: { text: string; duration: number };
-    unique_vocabulary_size: number;
-  };
 }
 
 interface Streamer {
@@ -437,7 +432,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatKpiCard
           label="Total Messages"
           value={kpis.totalMessages.toLocaleString()}
@@ -469,22 +464,6 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           icon={Trophy}
           color="bg-yellow-500"
           truncate
-        />
-        <StatKpiCard
-          label="Unique Vocabulary"
-          value={
-            data.funny_stats?.unique_vocabulary_size?.toLocaleString() ?? "—"
-          }
-          sub="distinct words used"
-          icon={MessageSquare}
-          color="bg-emerald-500"
-        />
-        <StatKpiCard
-          label="Laughs"
-          value={data.funny_stats?.laugh_vs_cry?.laugh?.toLocaleString() ?? "—"}
-          sub="jajaja/lol/xd"
-          icon={Trophy}
-          color="bg-pink-500"
         />
       </div>
 
@@ -666,83 +645,6 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           )}
         </CardContent>
       </Card>
-
-      {/* Row: Funny Stats / Vibe Check */}
-      {data.funny_stats && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Flame size={16} className="text-pink-500" />
-                Vibe Check: Laugh vs Cry
-              </CardTitle>
-              <CardDescription>
-                Frequency of laughter vs &quot;F in chat&quot; moments
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[220px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[
-                      {
-                        name: "Laughs",
-                        value: data.funny_stats.laugh_vs_cry.laugh,
-                        fill: "#ec4899",
-                      },
-                      {
-                        name: "Cries",
-                        value: data.funny_stats.laugh_vs_cry.cry,
-                        fill: "#3b82f6",
-                      },
-                    ]}
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    <Cell fill="#ec4899" />
-                    <Cell fill="#3b82f6" />
-                  </Pie>
-                  <Tooltip contentStyle={chartTooltipStyle(chart.isDark)} />
-                  <Legend verticalAlign="bottom" height={36} />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <TrendingUp size={16} className="text-emerald-500" />
-                Longest Monologue
-              </CardTitle>
-              <CardDescription>
-                Longest continuous transcript segment detected
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col justify-center h-[220px] space-y-4">
-              <div className="bg-muted/30 p-4 rounded-lg border border-border/50 italic text-sm relative">
-                <span className="absolute -top-3 -left-1 text-4xl text-primary/20 font-serif">
-                  &quot;
-                </span>
-                {data.funny_stats.longest_segment.text}...
-                <span className="absolute -bottom-6 -right-1 text-4xl text-primary/20 font-serif">
-                  &quot;
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <Badge variant="secondary" className="font-mono">
-                  {data.funny_stats.longest_segment.duration} seconds
-                </Badge>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                  Absolute Yapper
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Row 2: Most Popular VODs — by density */}
       <Card>
