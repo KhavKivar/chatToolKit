@@ -379,7 +379,7 @@ export function GlobalSearch() {
             video: string;
             video_title: string;
             streamer_name: string;
-            created_at: string;
+            video_created_at: string;
             start_seconds: number;
             text: string;
           }[] = transcriptData.results ?? transcriptData ?? [];
@@ -434,7 +434,7 @@ export function GlobalSearch() {
                 video_id: t.video,
                 video_title: t.video_title,
                 video_streamer: t.streamer_name,
-                video_created_at: t.created_at,
+                video_created_at: t.video_created_at,
                 start_seconds: t.start_seconds,
                 text: t.text,
                 score: best,
