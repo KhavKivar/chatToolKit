@@ -521,10 +521,17 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
     search_fields = ['text']
 
     def get_queryset(self):
-        qs = super().get_queryset()
+        qs = super().get_queryset().select_related('video', 'streamer')
         search = self.request.query_params.get('search')
         if search:
-            qs = qs.filter(text__icontains=search)
+            from django.db.models import Q
+            # Support multiple keywords separated by commas or spaces
+            keywords = [k.strip() for k in search.replace(',', ' ').split() if k.strip()]
+            if keywords:
+                q_objs = Q()
+                for kw in keywords:
+                    q_objs |= Q(text__icontains=kw)
+                qs = qs.filter(q_objs)
 
         video_id = self.request.query_params.get('video')
         if video_id:
