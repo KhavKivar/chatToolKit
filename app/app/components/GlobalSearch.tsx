@@ -331,6 +331,7 @@ export function GlobalSearch() {
             keywords.length > 0
               ? getTranscripts({
                   page,
+                  page_size: 100, // Increase page size for transcripts
                   search: keywords.join(","), // Using comma for backend support
                   streamer: activeFilter || undefined,
                 })
@@ -351,7 +352,7 @@ export function GlobalSearch() {
             start_seconds: number;
             text: string;
           }[] = transcriptData.results ?? transcriptData ?? [];
-          hasMoreOnServer = !!commentData.next;
+          hasMoreOnServer = !!commentData.next || !!transcriptData.next;
 
           // Fuzzy filter Comments
           for (const c of newCommentBatch) {
@@ -425,7 +426,7 @@ export function GlobalSearch() {
           page++;
           dispatch(
             setSearchProgress(
-              `Scanning ${onlyTranscripts ? "transcripts" : "chats"}... Checked ${page * (onlyTranscripts ? 10 : 500)} records...`,
+              `Scanning ${onlyTranscripts ? "transcripts" : "chats"}... Checked ${page * (onlyTranscripts ? 100 : 500)} records...`,
             ),
           );
         }

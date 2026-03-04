@@ -185,6 +185,7 @@ export const getTranscripts = async (params?: {
   video?: string;
   search?: string;
   page?: number;
+  page_size?: number;
 }) => {
   const response = await api.get("/transcripts/", { params });
   return response.data;
