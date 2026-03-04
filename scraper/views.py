@@ -257,9 +257,9 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
         all_words = []
         # Stop words (simplified set)
         STOP_WORDS = {
-            'a', 'the', 'and', 'or', 'to', 'of', 'in', 'is', 'it', 'for', 'with', 'on', 'as', 'at', 'this', 'that', 'from', 'but', 'not', 'by', 'an', 'be', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did', 'if', 'then', 'than', 'up', 'down', 'out', 'off', 'me', 'you', 'he', 'she', 'they', 'them', 'my', 'your', 'his', 'her', 'their', 'our', 'what', 'which', 'who', 'how', 'where', 'when', 'why',
-            'la', 'el', 'en', 'y', 'de', 'un', 'una', 'con', 'por', 'que', 'lo', 'los', 'las', 'del', 'mi', 'tu', 'su', 'nos', 'os', 'les', 'este', 'esta', 'esto', 'eso', 'para', 'porque', 'pero', 'como', 'si', 'no', 'ya', 'muy', 'mas', 'tan', 'muy', 'todo', 'nada', 'otro', 'cada', 'una', 'uno', 'donde', 'cual', 'esta', 'estos', 'estas', 'ser', 'estar', 'ha', 'has', 'he', 'han', 'hay',
-            'like', 'know', 'just', 'get', 'think', 'yeah', 'okay', 'right', 'well', 'really', 'now', 'time', 'good', 'see', 'can', 'don', 'actually', 'maybe', 'lot', 'little', 'bit', 'would', 'going', 'there', 'mean', 'one', 'here', 'man', 'got', 'something', 'everything', 'everyone', 'someone'
+            'the', 'and', 'with', 'that', 'this', 'from', 'they', 'have', 'were', 'what', 'when', 'where', 'your', 'about', 'there', 'their', 'which', 'would', 'could', 'should',
+            'like', 'know', 'just', 'get', 'think', 'yeah', 'okay', 'right', 'well', 'really', 'now', 'time', 'good', 'see', 'can', 'don', 'actually', 'maybe', 'lot', 'little', 'bit', 'would', 'going', 'there', 'mean', 'one', 'here', 'man', 'got', 'something', 'everything', 'everyone', 'someone',
+            'la', 'el', 'en', 'un', 'una', 'con', 'por', 'que', 'lo', 'los', 'las', 'del', 'mi', 'tu', 'su', 'nos', 'este', 'para', 'porque', 'pero', 'como', 'esta', 'estos', 'ser', 'estar'
         }
         
         for t in transcripts:
@@ -277,6 +277,27 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
         top_complex_words = Counter(complex_words).most_common(10)
         top_complex_words = [{"word": w, "count": c} for w, c in top_complex_words]
 
+        # 9. Funny & Valuable Stats
+        laugh_keywords = ['jajaja', 'ja ja', 'lol', 'lmao', 'haha', 'xd', 'funny', 'lmfao']
+        cry_keywords = ['f ', 'sad', 'triste', 'llorar', 'cry', 'pobre', 'rip', 'dep']
+        
+        laugh_count = 0
+        cry_count = 0
+        longest_segment = {"text": "", "duration": 0}
+        
+        # Calculate from full potential of transcripts if possible, or stay within the 2000
+        for t in transcripts:
+            low_text = t.text.lower()
+            if any(k in low_text for k in laugh_keywords): laugh_count += 1
+            if any(k in low_text for k in cry_keywords): cry_count += 1
+            
+            duration = t.end_seconds - t.start_seconds
+            if duration > longest_segment["duration"]:
+                longest_segment = {"text": t.text[:100], "duration": round(duration, 2)}
+
+        # Unique vocabulary size
+        unique_words_count = len(set(all_words))
+
         return Response({
             "top_commenters": list(top_commenters),
             "most_toxic_absolute": list(most_toxic_absolute),
@@ -287,6 +308,11 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
             "top_videos_by_volume": list(top_videos_by_volume),
             "hourly_stats": list(hourly_stats),
             "total_videos": total_videos,
+            "funny_stats": {
+                "laugh_vs_cry": {"laugh": laugh_count, "cry": cry_count},
+                "longest_segment": longest_segment,
+                "unique_vocabulary_size": unique_words_count
+            }
         })
 
 
