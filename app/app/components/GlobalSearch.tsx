@@ -417,7 +417,7 @@ export function GlobalSearch() {
 
           const totalMatchesThisJob =
             allCommentMatches.length + allTranscriptMatches.length;
-          const minMatchesDesired = 30; // Scan at least until we have 30 results
+          const minMatchesDesired = 100; // Scan at least until we have 100 results
           const minPagesToScan = 3; // Or at least scan 3 pages to be thorough
 
           if (

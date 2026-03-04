@@ -508,7 +508,7 @@ class ClipViewSet(viewsets.ModelViewSet):
     filterset_fields = ['streamer', 'video']
 
 class TranscriptEntryViewSet(viewsets.ModelViewSet):
-    queryset = TranscriptEntry.objects.all().order_by('video', 'start_seconds')
+    queryset = TranscriptEntry.objects.all().order_by('-video__created_at', 'start_seconds')
     serializer_class = TranscriptEntrySerializer
     filterset_fields = ['video', 'streamer']
     from django_filters.rest_framework import DjangoFilterBackend
