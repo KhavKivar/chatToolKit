@@ -488,7 +488,7 @@ class ClipViewSet(viewsets.ModelViewSet):
     serializer_class = ClipSerializer
     filterset_fields = ['streamer', 'video']
 
-class TranscriptEntryViewSet(viewsets.ReadOnlyModelViewSet):
+class TranscriptEntryViewSet(viewsets.ModelViewSet):
     queryset = TranscriptEntry.objects.all().order_by('video', 'start_seconds')
     serializer_class = TranscriptEntrySerializer
     filterset_fields = ['video', 'streamer']
