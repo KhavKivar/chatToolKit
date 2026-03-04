@@ -238,7 +238,9 @@ class TwitchScraperService:
             if limit_pages and page >= limit_pages: break
             
             res = self.fetch_gql({"videoID": video_id, "cursor": None, "contentOffsetSeconds": offset})
-            data = ((res or {}).get("data") or {}).get("video")
+            if not isinstance(res, dict):
+                raise ValueError(f"Video {video_id} not found on Twitch (it may have been deleted or expired).")
+            data = ((res.get("data") or {})).get("video")
             if not data:
                 raise ValueError(f"Video {video_id} not found on Twitch (it may have been deleted or expired).")
             
