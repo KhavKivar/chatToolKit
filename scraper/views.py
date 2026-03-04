@@ -248,8 +248,8 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
         if streamer_id:
             transcript_qs = transcript_qs.filter(streamer_id=streamer_id)
         
-        # Limit to 2000 entries for performance, focusing on most recent
-        transcripts = transcript_qs.only('text').order_by('-id')[:2000]
+        # Higher limit to cover more historical data (approx 100-150 hours)
+        transcripts = transcript_qs.only('text').order_by('-id')[:50000]
         
         import re
         from collections import Counter
