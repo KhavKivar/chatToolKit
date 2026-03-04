@@ -6,6 +6,8 @@ __pycache__/
 .env
 db.sqlite3
 *.pem
+*.key
+sv.txt
 
 # Next.js
 app/node_modules/
