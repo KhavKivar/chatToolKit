@@ -217,6 +217,12 @@ export function GlobalSearch() {
   // Sentinel ref for infinite scroll
   const sentinelRef = React.useRef<HTMLDivElement>(null);
 
+  // Stable refs to avoid recreating searchWithFilter on every state change
+  const groupsRef = React.useRef(groups);
+  groupsRef.current = groups;
+  const lastScannedPageRef = React.useRef(lastScannedPage);
+  lastScannedPageRef.current = lastScannedPage;
+
   // Accordion state: set of expanded video_ids
   const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(
     new Set(),
@@ -335,7 +341,7 @@ export function GlobalSearch() {
         }
 
         dispatch(setSearched(true));
-        const startPage = isLoadMore ? lastScannedPage + 1 : 1;
+        const startPage = isLoadMore ? lastScannedPageRef.current + 1 : 1;
 
         const allCommentMatches: ScoredComment[] = [];
         const allTranscriptMatches: TranscriptMatch[] = [];
@@ -461,7 +467,7 @@ export function GlobalSearch() {
         const newGroupsMap = new Map<string, VideoGroup>();
 
         if (isLoadMore) {
-          groups.forEach((g) =>
+          groupsRef.current.forEach((g) =>
             newGroupsMap.set(g.video_id, {
               ...g,
               comments: [...g.comments],
@@ -538,12 +544,12 @@ export function GlobalSearch() {
         dispatch(setSearchProgress(""));
       }
     },
+    // groups and lastScannedPage accessed via refs to keep this callback stable
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       keywords,
       streamerFilter,
       dispatch,
-      lastScannedPage,
-      groups,
       excludedUsers,
       toxicOnly,
       toxicityThreshold,
