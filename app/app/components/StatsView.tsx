@@ -43,6 +43,7 @@ import {
   Video,
   Skull,
   ExternalLink,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -126,6 +127,7 @@ interface StatsData {
   top_videos_by_volume: StatItem[];
   hourly_stats: StatItem[];
   total_videos: number;
+  top_mentioned_users?: { username: string; count: number }[];
 }
 
 interface Streamer {
@@ -1067,6 +1069,62 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           )}
         </CardContent>
       </Card>
+
+      {/* Mentions Row */}
+      {data.top_mentioned_users && data.top_mentioned_users.length > 0 && (
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Users size={16} className="text-pink-500" />
+              Community Shoutouts
+            </CardTitle>
+            <CardDescription>
+              Which community members does the streamer mention most?
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={data.top_mentioned_users}
+                layout="vertical"
+                margin={{ left: 8, right: 32, top: 0, bottom: 0 }}
+              >
+                <CartesianGrid
+                  horizontal={false}
+                  strokeDasharray="3 3"
+                  stroke={chart.gridColor}
+                />
+                <XAxis
+                  type="number"
+                  axisLine={false}
+                  tickLine={false}
+                  tick={tickProps}
+                />
+                <YAxis
+                  dataKey="username"
+                  type="category"
+                  width={110}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={tickProps}
+                />
+                <Tooltip
+                  contentStyle={chartTooltipStyle(chart.isDark)}
+                  cursor={{ fill: "rgba(236,72,153,0.06)" }}
+                  formatter={(v) => [Number(v).toLocaleString(), "Mentions"]}
+                />
+                <Bar
+                  dataKey="count"
+                  radius={[0, 4, 4, 0]}
+                  barSize={18}
+                  fill="#ec4899"
+                  minPointSize={2}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 
