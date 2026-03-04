@@ -413,7 +413,6 @@ export function GlobalSearch() {
           if (
             allCommentMatches.length > 0 ||
             allTranscriptMatches.length > 0 ||
-            isLoadMore ||
             !hasMoreOnServer
           ) {
             break;
