@@ -4,22 +4,22 @@ After=network.target
 
 [Service]
 # Asegúrate de que este usuario es correcto (el tuyo de linux)
-User=ubuntu
-Group=ubuntu
+User=opc
+Group=opc
 
 # Directorio principal del proyecto
-WorkingDirectory=/home/ubuntu/chat-download
+WorkingDirectory=/home/opc/chat-download
 
 # Ejecuta el worker usando el entorno virtual de Python
-ExecStart=/home/ubuntu/chat-download/venv/bin/python manage.py run_scraper_worker
+ExecStart=/home/opc/chat-download/venv/bin/python manage.py run_scraper_worker
 
 # Reinicia automáticamente si el worker falla
 Restart=always
 RestartSec=5
 
 # Logs
-StandardOutput=append:/home/ubuntu/chat-download/worker.log
-StandardError=append:/home/ubuntu/chat-download/worker_error.log
+StandardOutput=append:/home/opc/chat-download/worker.log
+StandardError=append:/home/opc/chat-download/worker_error.log
 
 [Install]
 WantedBy=multi-user.target

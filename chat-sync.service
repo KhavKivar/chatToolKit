@@ -4,20 +4,20 @@ After=network.target
 
 [Service]
 # User and Group should be updated if different from the worker
-User=ubuntu
-Group=ubuntu
+User=opc
+Group=opc
 
-WorkingDirectory=/home/ubuntu/chat-download
+WorkingDirectory=/home/opc/chat-download
 Environment=PYTHONUNBUFFERED=1
 
 # Run with --loop to check every 6 hours
-ExecStart=/home/ubuntu/chat-download/venv/bin/python manage.py enqueue_daily_vods --loop
+ExecStart=/home/opc/chat-download/venv/bin/python manage.py enqueue_daily_vods --loop
 
 Restart=always
 RestartSec=60
 
-StandardOutput=append:/home/ubuntu/chat-download/sync.log
-StandardError=append:/home/ubuntu/chat-download/sync_error.log
+StandardOutput=append:/home/opc/chat-download/sync.log
+StandardError=append:/home/opc/chat-download/sync_error.log
 
 [Install]
 WantedBy=multi-user.target

@@ -15,7 +15,7 @@ jobs:
           username: opc
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd /home/ubuntu/chat-download
+            cd /home/opc/chat-download
             git pull origin main
             ./venv/bin/pip install -r requirements.txt
             ./venv/bin/python manage.py migrate
