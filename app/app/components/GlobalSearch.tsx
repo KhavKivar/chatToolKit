@@ -175,6 +175,18 @@ function formatTime(seconds: number): string {
 
 const THRESHOLD = 0.7; // Lowered from 0.8 for better results
 
+// Generate 4-char n-grams from a keyword so backend icontains pre-filter
+// catches near-typos (e.g. "guldasan" → ngrams match "guldansan")
+function getSearchTerms(keyword: string): string[] {
+  const clean = keyword.toLowerCase().replace(/[^\w]/g, "");
+  if (clean.length <= 4) return [clean];
+  const ngrams = new Set<string>([clean]);
+  for (let i = 0; i <= clean.length - 4; i++) {
+    ngrams.add(clean.slice(i, i + 4));
+  }
+  return [...ngrams];
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function GlobalSearch() {
   const dispatch = useDispatch();
@@ -304,7 +316,7 @@ export function GlobalSearch() {
           const commentPromise = getComments({
             page,
             page_size: 500,
-            search_or: keywords.join(","),
+            search_or: keywords.flatMap(getSearchTerms).join(","),
             exclude_users: excludedUsers.join(","),
             min_toxicity: toxicOnly ? toxicityThreshold : undefined,
             video__streamer: activeFilter || undefined,
