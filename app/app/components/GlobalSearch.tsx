@@ -56,6 +56,7 @@ import {
   setIsScanningMore,
   setToxicOnly,
   setToxicityThreshold,
+  setOnlyTranscripts,
 } from "../lib/store/features/searchSlice";
 
 interface Comment {
@@ -206,6 +207,7 @@ export function GlobalSearch() {
     isScanningMore,
     toxicOnly,
     toxicityThreshold,
+    onlyTranscripts,
   } = useSelector((state: RootState) => state.search);
 
   const searchParams = useSearchParams();
@@ -313,21 +315,23 @@ export function GlobalSearch() {
 
         while (hasMoreOnServer && page <= startPage + BATCH_SIZE - 1) {
           // 1. Fetch Comments
-          const commentPromise = getComments({
-            page,
-            page_size: 500,
-            search_or: keywords.flatMap(getSearchTerms).join(","),
-            exclude_users: excludedUsers.join(","),
-            min_toxicity: toxicOnly ? toxicityThreshold : undefined,
-            video__streamer: activeFilter || undefined,
-          });
+          const commentPromise = !onlyTranscripts
+            ? getComments({
+                page,
+                page_size: 500,
+                search_or: keywords.flatMap(getSearchTerms).join(","),
+                exclude_users: excludedUsers.join(","),
+                min_toxicity: toxicOnly ? toxicityThreshold : undefined,
+                video__streamer: activeFilter || undefined,
+              })
+            : Promise.resolve({ results: [], next: null });
 
           // 2. Fetch Transcripts (only if keywords are present and not in toxicOnly mode)
           const transcriptPromise =
             keywords.length > 0
               ? getTranscripts({
                   page,
-                  search: keywords.join(" "), // Simple space search for backend
+                  search: keywords.join(","), // Using comma for backend support
                   streamer: activeFilter || undefined,
                 })
               : Promise.resolve({ results: [] });
@@ -421,7 +425,7 @@ export function GlobalSearch() {
           page++;
           dispatch(
             setSearchProgress(
-              `Scanning database... Checked ${page * 500} records...`,
+              `Scanning ${onlyTranscripts ? "transcripts" : "chats"}... Checked ${page * (onlyTranscripts ? 10 : 500)} records...`,
             ),
           );
         }
@@ -515,6 +519,7 @@ export function GlobalSearch() {
       excludedUsers,
       toxicOnly,
       toxicityThreshold,
+      onlyTranscripts,
     ],
   );
 
@@ -625,7 +630,12 @@ export function GlobalSearch() {
               onKeyDown={(e) => e.key === "Enter" && addKeyword()}
               className="h-10"
             />
-            <Button variant="outline" onClick={addKeyword} disabled={!input.trim()} className="shrink-0 h-10">
+            <Button
+              variant="outline"
+              onClick={addKeyword}
+              disabled={!input.trim()}
+              className="shrink-0 h-10"
+            >
               <Tag size={14} className="mr-1.5" /> Add
             </Button>
           </div>
@@ -640,7 +650,9 @@ export function GlobalSearch() {
             >
               <option value="">All Streamers</option>
               {streamers.map((s) => (
-                <option key={s.id} value={s.id}>{s.display_name}</option>
+                <option key={s.id} value={s.id}>
+                  {s.display_name}
+                </option>
               ))}
             </select>
 
@@ -656,11 +668,25 @@ export function GlobalSearch() {
               🔴 Toxic Only
             </button>
 
+            {/* Only Transcripts toggle */}
+            <button
+              onClick={() => dispatch(setOnlyTranscripts(!onlyTranscripts))}
+              className={`h-9 px-3 rounded-md border text-xs font-bold transition-colors ${
+                onlyTranscripts
+                  ? "bg-purple-500/10 border-purple-500/30 text-purple-600"
+                  : "border-input text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              🎙️ Said by Streamer
+            </button>
+
             {/* Threshold — only when toxic */}
             {toxicOnly && (
               <select
                 value={toxicityThreshold}
-                onChange={(e) => dispatch(setToxicityThreshold(Number(e.target.value)))}
+                onChange={(e) =>
+                  dispatch(setToxicityThreshold(Number(e.target.value)))
+                }
                 className="h-9 bg-red-500/5 border border-red-500/20 text-xs font-bold rounded-md px-2 focus:outline-none text-red-500 cursor-pointer"
               >
                 <option value={70}>≥70%</option>
@@ -695,19 +721,33 @@ export function GlobalSearch() {
           {(keywords.length > 0 || excludedUsers.length > 0) && (
             <div className="flex flex-wrap gap-1.5 p-2 bg-muted/20 rounded-lg border border-border/40">
               {keywords.map((kw) => (
-                <Badge key={kw} variant="secondary" className="gap-1 bg-primary/10 border-primary/20 text-xs">
+                <Badge
+                  key={kw}
+                  variant="secondary"
+                  className="gap-1 bg-primary/10 border-primary/20 text-xs"
+                >
                   <Tag size={10} className="text-primary" />
                   {kw}
-                  <button onClick={() => removeKeyword(kw)} className="ml-0.5 hover:text-destructive">
+                  <button
+                    onClick={() => removeKeyword(kw)}
+                    className="ml-0.5 hover:text-destructive"
+                  >
                     <X size={10} />
                   </button>
                 </Badge>
               ))}
               {excludedUsers.map((u) => (
-                <Badge key={u} variant="secondary" className="gap-1 bg-destructive/10 border-destructive/20 text-destructive text-xs">
+                <Badge
+                  key={u}
+                  variant="secondary"
+                  className="gap-1 bg-destructive/10 border-destructive/20 text-destructive text-xs"
+                >
                   <X size={10} />
                   {u}
-                  <button onClick={() => removeExcludedUser(u)} className="ml-0.5 hover:opacity-70">
+                  <button
+                    onClick={() => removeExcludedUser(u)}
+                    className="ml-0.5 hover:opacity-70"
+                  >
                     <X size={10} />
                   </button>
                 </Badge>
@@ -734,7 +774,10 @@ export function GlobalSearch() {
                   : "Search in All Chats"}
                 {keywords.length > 0
                   ? ` (${keywords.length} keyword${keywords.length !== 1 ? "s" : ""})`
-                  : toxicOnly ? " (Toxic only)" : ""}
+                  : toxicOnly
+                    ? " (Toxic only)"
+                    : ""}
+                {onlyTranscripts ? " (Transcripts only)" : ""}
               </>
             )}
           </Button>
