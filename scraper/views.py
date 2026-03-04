@@ -492,15 +492,18 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
     queryset = TranscriptEntry.objects.all().order_by('video', 'start_seconds')
     serializer_class = TranscriptEntrySerializer
     filterset_fields = ['video', 'streamer']
-    search_fields = ['text']
+    from django_filters.rest_framework import DjangoFilterBackend
+    from rest_framework.filters import OrderingFilter
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
 
     def get_queryset(self):
         qs = super().get_queryset().select_related('video', 'streamer')
-        search = self.request.query_params.get('search')
-        if search:
+        # Try both 'search' and 'search_or' for backwards compatibility/consistency
+        search_query = self.request.query_params.get('search_or') or self.request.query_params.get('search')
+        if search_query:
             from django.db.models import Q
-            # Support multiple keywords separated by commas or spaces
-            keywords = [k.strip() for k in search.replace(',', ' ').split() if k.strip()]
+            # Only split by comma to allow spaces within a single keyword phrase
+            keywords = [k.strip() for k in search_query.split(',') if k.strip()]
             if keywords:
                 q_objs = Q()
                 for kw in keywords:
