@@ -609,9 +609,20 @@ export function GlobalSearch() {
     window.history.replaceState(null, "", newUrl);
   }, [keywords, streamerFilter, searchParams, excludedUsers]);
 
-  // Infinite scroll: auto-load more when sentinel enters viewport
+  // When 0 matches so far but more pages exist, auto-continue scanning
+  // (sentinel can't be used — it would be immediately visible and loop)
   React.useEffect(() => {
     if (!canScanMore || loading || isScanningMore || !searched) return;
+    if (groups.length > 0) return; // handled by IntersectionObserver below
+    const timer = setTimeout(() => handleSearch(true), 300);
+    return () => clearTimeout(timer);
+  }, [canScanMore, loading, isScanningMore, searched, groups.length, handleSearch]);
+
+  // Infinite scroll: auto-load more when sentinel enters viewport
+  // Only active when there are already results pushing sentinel below fold
+  React.useEffect(() => {
+    if (!canScanMore || loading || isScanningMore || !searched) return;
+    if (groups.length === 0) return; // use auto-continue effect above instead
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -625,7 +636,7 @@ export function GlobalSearch() {
     const sentinel = sentinelRef.current;
     if (sentinel) observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [canScanMore, loading, isScanningMore, searched, handleSearch]);
+  }, [canScanMore, loading, isScanningMore, searched, groups.length, handleSearch]);
 
   return (
     <div className="space-y-6">
@@ -1169,8 +1180,8 @@ export function GlobalSearch() {
             </div>
           )}
 
-          {/* Infinite scroll sentinel — triggers auto-load when visible */}
-          {canScanMore && !loading && !isScanningMore && (
+          {/* Infinite scroll sentinel — only shown when results exist (avoids loop when 0 matches) */}
+          {canScanMore && !loading && !isScanningMore && groups.length > 0 && (
             <div
               ref={sentinelRef}
               className="py-6 flex items-center justify-center gap-2 text-xs text-muted-foreground/60 font-medium"
