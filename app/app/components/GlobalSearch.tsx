@@ -331,7 +331,7 @@ export function GlobalSearch() {
             keywords.length > 0
               ? getTranscripts({
                   page,
-                  page_size: 100, // Increase page size for transcripts
+                  page_size: 500, // Matching comment page size
                   search: keywords.join(","), // Using comma for backend support
                   streamer: activeFilter || undefined,
                 })
@@ -415,9 +415,14 @@ export function GlobalSearch() {
           dispatch(setLastScannedPage(page));
           dispatch(setCanScanMore(hasMoreOnServer));
 
+          const totalMatchesThisJob =
+            allCommentMatches.length + allTranscriptMatches.length;
+          const minMatchesDesired = 30; // Scan at least until we have 30 results
+          const minPagesToScan = 3; // Or at least scan 3 pages to be thorough
+
           if (
-            allCommentMatches.length > 0 ||
-            allTranscriptMatches.length > 0 ||
+            (totalMatchesThisJob >= minMatchesDesired &&
+              page - startPage + 1 >= minPagesToScan) ||
             !hasMoreOnServer
           ) {
             break;
@@ -426,7 +431,7 @@ export function GlobalSearch() {
           page++;
           dispatch(
             setSearchProgress(
-              `Scanning ${onlyTranscripts ? "transcripts" : "chats"}... Checked ${page * (onlyTranscripts ? 100 : 500)} records...`,
+              `Scanning ${onlyTranscripts ? "transcripts" : "chats"}... Checked ${page * 500} records...`,
             ),
           );
         }
