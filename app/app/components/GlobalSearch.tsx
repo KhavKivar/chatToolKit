@@ -819,8 +819,8 @@ export function GlobalSearch() {
       {/* ── Results grouped by video ─────────────────────────────── */}
       {searched && (
         <div className="space-y-4">
-          {/* Summary bar */}
-          {searched && (groups.length > 0 || (!loading && !isScanningMore)) && (
+          {/* Summary bar — always shown once searched to avoid flicker */}
+          {searched && (
             <div className="flex items-center justify-between text-sm px-1">
               <div className="flex items-center gap-3">
                 {loading || isScanningMore ? (
