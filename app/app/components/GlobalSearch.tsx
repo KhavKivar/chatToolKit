@@ -332,7 +332,7 @@ export function GlobalSearch() {
               ? getTranscripts({
                   page,
                   page_size: 500, // Matching comment page size
-                  search: keywords.join(","), // Using comma for backend support
+                  search_or: keywords.join(","), // Using search_or for consistency
                   streamer: activeFilter || undefined,
                 })
               : Promise.resolve({ results: [] });

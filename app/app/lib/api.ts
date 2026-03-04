@@ -183,6 +183,7 @@ export const getClips = async (params?: {
 export const getTranscripts = async (params?: {
   streamer?: string;
   video?: string;
+  search_or?: string;
   search?: string;
   page?: number;
   page_size?: number;
