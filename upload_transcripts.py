@@ -180,7 +180,7 @@ def transcribe(audio_path: Path, model, model_name: str, duration_s: int | None,
 
     def run():
         try:
-            result_holder.append(model.transcribe(str(audio_path), fp16=use_gpu, verbose=False))
+            result_holder.append(model.transcribe(str(audio_path), fp16=use_gpu, verbose=False, language="en"))
         except Exception as e:
             error_holder.append(e)
 
@@ -370,9 +370,9 @@ def main():
     group.add_argument("--all", action="store_true", help="Procesar todos los VODs en la BD")
     parser.add_argument(
         "--model",
-        default="medium",
+        default="turbo",
         choices=["tiny", "base", "small", "medium", "large", "large-v2", "large-v3", "turbo"],
-        help="Modelo Whisper a usar (default: medium)",
+        help="Modelo Whisper a usar (default: turbo)",
     )
     args = parser.parse_args()
     model_name = args.model
