@@ -16,7 +16,8 @@ import {
 } from "recharts";
 import { useTheme } from "next-themes";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { getStats, getStreamers } from "../lib/api";
+import { getStatsChat, getStatsTranscript, getStreamers } from "../lib/api";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
   CardContent,
@@ -117,17 +118,20 @@ interface WordStat {
   count: number;
 }
 
-interface StatsData {
+interface ChatStatsData {
   top_commenters: StatItem[];
   most_toxic_absolute: StatItem[];
   most_toxic_relative: StatItem[];
-  top_streamer_words: WordStat[];
-  top_complex_words: WordStat[];
   toxicity_by_video: StatItem[];
   top_videos_by_volume: StatItem[];
   hourly_stats: StatItem[];
   total_videos: number;
-  top_mentioned_users?: { username: string; count: number }[];
+}
+
+interface TranscriptStatsData {
+  top_streamer_words: WordStat[];
+  top_complex_words: WordStat[];
+  top_mentioned_users: { username: string; count: number }[];
 }
 
 interface Streamer {
@@ -224,67 +228,92 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const [data, setData] = useState<StatsData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [chatData, setChatData] = useState<ChatStatsData | null>(null);
+  const [transcriptData, setTranscriptData] = useState<TranscriptStatsData | null>(null);
+  const [chatLoading, setChatLoading] = useState(true);
+  const [transcriptLoading, setTranscriptLoading] = useState(false);
+  const [transcriptFetched, setTranscriptFetched] = useState(false);
   const [streamers, setStreamers] = useState<Streamer[]>([]);
 
-  // Read streamer filter from URL param
   const streamerFilter = searchParams.get("streamer") ?? "";
 
   const setStreamerFilter = (val: string) => {
-    setLoading(true);
+    setChatLoading(true);
+    setTranscriptFetched(false);
+    setTranscriptData(null);
     const params = new URLSearchParams(searchParams.toString());
     if (val) {
       params.set("streamer", val);
     } else {
       params.delete("streamer");
     }
-    // Correct redirection: use current pathname instead of assuming '/'
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
+  // Load streamers and default to Shigity if no filter set
   useEffect(() => {
     getStreamers().then((res) => {
-      setStreamers(res.results || res);
+      const list: Streamer[] = res.results || res;
+      setStreamers(list);
+      if (!searchParams.get("streamer")) {
+        const shigity = list.find((s) => s.display_name.toLowerCase() === "shigity");
+        if (shigity) {
+          const params = new URLSearchParams(searchParams.toString());
+          params.set("streamer", shigity.id);
+          router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+        }
+      }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Load chat stats whenever streamer changes
   useEffect(() => {
-    getStats(streamerFilter || undefined)
-      .then(setData)
-      .catch((err) => console.error("Failed to fetch stats:", err))
-      .finally(() => setLoading(false));
+    setChatLoading(true);
+    getStatsChat(streamerFilter || undefined)
+      .then(setChatData)
+      .catch((err) => console.error("Failed to fetch chat stats:", err))
+      .finally(() => setChatLoading(false));
   }, [streamerFilter]);
+
+  const loadTranscriptStats = () => {
+    if (transcriptFetched) return;
+    setTranscriptLoading(true);
+    setTranscriptFetched(true);
+    getStatsTranscript(streamerFilter || undefined)
+      .then(setTranscriptData)
+      .catch((err) => console.error("Failed to fetch transcript stats:", err))
+      .finally(() => setTranscriptLoading(false));
+  };
 
   const chart = useChartTheme();
 
   const kpis = useMemo(() => {
-    if (!data) return null;
-    const totalMessages = data.hourly_stats.reduce(
+    if (!chatData) return null;
+    const totalMessages = chatData.hourly_stats.reduce(
       (s, h) => s + (h.count || 0),
       0,
     );
-    const totalToxic = data.hourly_stats.reduce(
+    const totalToxic = chatData.hourly_stats.reduce(
       (s, h) => s + (h.toxic_count || 0),
       0,
     );
     const toxicRate =
       totalMessages > 0 ? ((totalToxic / totalMessages) * 100).toFixed(1) : "0";
-    const topCommenter = data.top_commenters[0]?.commenter_display_name ?? "—";
+    const topCommenter = chatData.top_commenters[0]?.commenter_display_name ?? "—";
     return {
       totalMessages,
       totalToxic,
       toxicRate,
       topCommenter,
-      uniqueVideos: data.total_videos,
+      uniqueVideos: chatData.total_videos,
     };
-  }, [data]);
+  }, [chatData]);
 
-  // Top commenters cross-referenced with toxicity
   const commenterCrossData = useMemo(() => {
-    if (!data) return [];
-    return data.top_commenters.slice(0, 8).map((c) => {
-      const toxicEntry = data.most_toxic_absolute.find(
+    if (!chatData) return [];
+    return chatData.top_commenters.slice(0, 8).map((c) => {
+      const toxicEntry = chatData.most_toxic_absolute.find(
         (t) => t.commenter_login === c.commenter_login,
       );
       return {
@@ -294,42 +323,28 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
         clean: (c.count ?? 0) - (toxicEntry?.toxic_count ?? 0),
       };
     });
-  }, [data]);
+  }, [chatData]);
 
-  // Pie chart: clean vs toxic
   const toxicityPieData = useMemo(() => {
     if (!kpis) return [];
     return [
-      {
-        name: "Clean",
-        value: kpis.totalMessages - kpis.totalToxic,
-        fill: "#22c55e",
-      },
+      { name: "Clean", value: kpis.totalMessages - kpis.totalToxic, fill: "#22c55e" },
       { name: "Toxic", value: kpis.totalToxic, fill: "#ef4444" },
     ];
   }, [kpis]);
 
-  // Video data for most popular (engagement density: comments/min)
   const mostPopularData = useMemo(() => {
-    if (!data) return [];
-    // Clone and sort by engagement_density descending
-    const sorted = [...data.toxicity_by_video]
+    if (!chatData) return [];
+    const sorted = [...chatData.toxicity_by_video]
       .sort((a, b) => (b.engagement_density ?? 0) - (a.engagement_density ?? 0))
       .slice(0, 8);
-
     return sorted.map((v) => {
-      const streamer = v.video__streamer_display_name
-        ? `[${v.video__streamer_display_name}] `
-        : "";
+      const streamer = v.video__streamer_display_name ? `[${v.video__streamer_display_name}] ` : "";
       const date = v.video__created_at
-        ? new Date(v.video__created_at).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
+        ? new Date(v.video__created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
         : "";
       const fullTitle = `${streamer}${v.video__title ?? "Unknown"}`;
-      const truncated =
-        fullTitle.length > 22 ? fullTitle.substring(0, 19) + "…" : fullTitle;
+      const truncated = fullTitle.length > 22 ? fullTitle.substring(0, 19) + "…" : fullTitle;
       return {
         title: date ? `${truncated}\n${date}` : truncated,
         fullTitle: date ? `${fullTitle} · ${date}` : fullTitle,
@@ -337,46 +352,35 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
         total: v.total_count ?? 0,
       };
     });
-  }, [data]);
+  }, [chatData]);
 
-  // Top videos by total volume
   const topVideosVolumeData = useMemo(() => {
-    if (!data || !data.top_videos_by_volume) return [];
-    return data.top_videos_by_volume.slice(0, 10).map((v) => {
-      const streamer = v.video__streamer_display_name
-        ? `[${v.video__streamer_display_name}] `
-        : "";
+    if (!chatData?.top_videos_by_volume) return [];
+    return chatData.top_videos_by_volume.slice(0, 10).map((v) => {
+      const streamer = v.video__streamer_display_name ? `[${v.video__streamer_display_name}] ` : "";
       const date = v.video__created_at
-        ? new Date(v.video__created_at).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-          })
+        ? new Date(v.video__created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })
         : "";
       const fullTitle = `${streamer}${v.video__title ?? "Unknown"}`;
-      const truncated =
-        fullTitle.length > 22 ? fullTitle.substring(0, 19) + "…" : fullTitle;
+      const truncated = fullTitle.length > 22 ? fullTitle.substring(0, 19) + "…" : fullTitle;
       return {
         title: date ? `${truncated}\n${date}` : truncated,
         fullTitle: date ? `${fullTitle} · ${date}` : fullTitle,
         total: v.total_count ?? 0,
       };
     });
-  }, [data]);
+  }, [chatData]);
 
-  if (loading && !data) {
+  if (chatLoading && !chatData) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-4">
-        <Loader2
-          className="animate-spin text-primary"
-          size={40}
-          strokeWidth={2}
-        />
+        <Loader2 className="animate-spin text-primary" size={40} strokeWidth={2} />
         <p className="text-sm font-medium">Loading analytics…</p>
       </div>
     );
   }
 
-  if (!data || !kpis) return null;
+  if (!chatData || !kpis) return null;
 
   const tickProps = { fontSize: 11, fill: chart.tickColor };
 
@@ -384,6 +388,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
     <div className="space-y-8 pb-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
       {/* Header & Filter */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 pb-6 border-b">
+
         <div className="space-y-1">
           <Badge variant="outline" className="mb-2 gap-1.5 text-xs">
             <TrendingUp size={11} />
@@ -469,6 +474,15 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
         />
       </div>
 
+      <Tabs defaultValue="chat" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="chat">Chat Stats</TabsTrigger>
+          <TabsTrigger value="transcript" onClick={loadTranscriptStats}>
+            Transcript Stats
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="chat" className="space-y-8">
       {/* Row 1a: Top Commenters | Most Toxic by Volume */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Power Users */}
@@ -861,8 +875,24 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
         </Card>
       </div>
 
+        </TabsContent>
+
+        <TabsContent value="transcript" className="space-y-8">
+          {transcriptLoading && (
+            <div className="flex flex-col items-center justify-center py-24 text-muted-foreground gap-4">
+              <Loader2 className="animate-spin text-primary" size={40} strokeWidth={2} />
+              <p className="text-sm font-medium">Analyzing transcripts…</p>
+            </div>
+          )}
+          {!transcriptLoading && !transcriptData && transcriptFetched && (
+            <div className="flex items-center justify-center py-24 text-muted-foreground text-sm">
+              No transcript data available.
+            </div>
+          )}
+          {transcriptData && (
+            <>
       {/* Row: Streamer Vocabulary */}
-      {data.top_streamer_words && data.top_streamer_words.length > 0 && (
+      {transcriptData.top_streamer_words && transcriptData.top_streamer_words.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -914,7 +944,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                   barSize={18}
                   minPointSize={2}
                 >
-                  {data.top_streamer_words.map((entry, index) => (
+                  {transcriptData.top_streamer_words.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={`hsl(271, 91%, ${65 - index * 3}%)`}
@@ -928,7 +958,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
       )}
 
       {/* Row: Complex Vocabulary */}
-      {data.top_complex_words && data.top_complex_words.length > 0 && (
+      {transcriptData.top_complex_words && transcriptData.top_complex_words.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -980,7 +1010,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                   barSize={18}
                   minPointSize={2}
                 >
-                  {data.top_complex_words.map((entry, index) => (
+                  {transcriptData.top_complex_words.map((entry, index) => (
                     <Cell
                       key={`cell-complex-${index}`}
                       fill={`hsl(142, 70%, ${55 - index * 3}%)`}
@@ -1071,7 +1101,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
       </Card>
 
       {/* Mentions Row */}
-      {data.top_mentioned_users && data.top_mentioned_users.length > 0 && (
+      {transcriptData.top_mentioned_users && transcriptData.top_mentioned_users.length > 0 && (
         <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -1125,6 +1155,10 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           </CardContent>
         </Card>
       )}
+            </>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 
