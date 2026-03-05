@@ -446,6 +446,17 @@ def _fix_names_in_text(text: str, names: dict) -> str:
     names: {lowercase_name: original_case_name}
     """
     import re as _re
+    try:
+        from rapidfuzz.distance import Levenshtein as _Lev
+        _levenshtein_fn = _Lev.distance
+    except ImportError:
+        _levenshtein_fn = _levenshtein
+
+    # Pre-bucket names by length for fast candidate filtering
+    from collections import defaultdict as _dd
+    by_len = _dd(list)
+    for nl in names:
+        by_len[len(nl)].append(nl)
 
     words = _re.split(r'(\s+)', text)  # preserve whitespace
     result = []
@@ -471,26 +482,24 @@ def _fix_names_in_text(text: str, names: dict) -> str:
             result.append(prefix + names[lower] + suffix)
             continue
 
-        # Fuzzy match — only for words that look like they could be names
-        # (contain letters, not common English words)
+        # Fuzzy match — only check names within ±2 length (pre-bucketed)
         best_name = None
         best_dist = float('inf')
+        wlen = len(lower)
 
-        for name_lower, name_original in names.items():
-            # Only compare names of similar length (within 2 chars)
-            if abs(len(lower) - len(name_lower)) > 2:
-                continue
+        candidates = []
+        for delta in range(-2, 3):
+            candidates.extend(by_len.get(wlen + delta, []))
 
-            dist = _levenshtein(lower, name_lower)
-            max_len = max(len(lower), len(name_lower))
-
-            # Require ≥80% similarity AND max 2 edits (stricter threshold since
-            # the global name dict is much larger, reducing false positives)
+        for name_lower in candidates:
+            dist = _levenshtein_fn(lower, name_lower)
+            max_len = max(wlen, len(name_lower))
+            # Require ≥80% similarity AND max 2 edits
             if dist <= 2 and dist < best_dist and (1 - dist / max_len) >= 0.80:
                 best_dist = dist
-                best_name = name_original
+                best_name = names[name_lower]
 
-        if best_name and best_dist > 0:  # dist > 0 means it's a correction, not exact
+        if best_name and best_dist > 0:
             result.append(prefix + best_name + suffix)
         else:
             result.append(token)
