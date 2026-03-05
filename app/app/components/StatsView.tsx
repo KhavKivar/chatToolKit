@@ -20,8 +20,9 @@ import api, {
   getStatsChat,
   getStatsTranscript,
   getStreamers,
-  getUnmatchedWords,
+  getAliases,
   bulkCreateAliases,
+  deleteAlias,
   getExcludedShoutouts,
   createExcludedShoutout,
   deleteExcludedShoutout,
@@ -249,13 +250,14 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
   const [streamers, setStreamers] = useState<Streamer[]>([]);
 
   // Alias Manager state
-  const [aliasTab, setAliasTab] = useState<"unknown" | "blocked">("unknown");
-  const [unmatchedWords, setUnmatchedWords] = useState<{ word: string; count: number }[]>([]);
-  const [unmatchedLoading, setUnmatchedLoading] = useState(false);
-  const [aliasInputs, setAliasInputs] = useState<Record<string, string>>({});
+  const [aliasTab, setAliasTab] = useState<"aliases" | "blocked">("aliases");
+  const [existingAliases, setExistingAliases] = useState<{ id: number; alias: string; canonical_name: string }[]>([]);
+  const [aliasesLoaded, setAliasesLoaded] = useState(false);
+  const [newAliasWord, setNewAliasWord] = useState("");
+  const [newAliasCanonical, setNewAliasCanonical] = useState("");
   const [aliasSaving, setAliasSaving] = useState(false);
   const [excludedShoutouts, setExcludedShoutouts] = useState<{ id: number; name: string }[]>([]);
-  const [excludedLoading, setExcludedLoading] = useState(false);
+  const [excludedLoaded, setExcludedLoaded] = useState(false);
   const [newExcludedName, setNewExcludedName] = useState("");
 
   const streamerFilter = searchParams.get("streamer") ?? "";
@@ -264,8 +266,10 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
     setChatLoading(true);
     setTranscriptFetched(false);
     setTranscriptData(null);
-    setUnmatchedWords([]);
-    setAliasInputs({});
+    setAliasesLoaded(false);
+    setExcludedLoaded(false);
+    setExistingAliases([]);
+    setExcludedShoutouts([]);
     const params = new URLSearchParams(searchParams.toString());
     if (val) {
       params.set("streamer", val);
@@ -324,33 +328,35 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
       .finally(() => setTranscriptLoading(false));
   };
 
-  const loadUnmatchedWords = () => {
-    setUnmatchedLoading(true);
-    getUnmatchedWords(streamerFilter || undefined)
-      .then((words) => {
-        setUnmatchedWords(words);
-        setAliasInputs({});
-      })
-      .catch((err) => console.error("Failed to load unmatched words:", err))
-      .finally(() => setUnmatchedLoading(false));
+  const loadAliases = () => {
+    if (aliasesLoaded) return;
+    getAliases()
+      .then((data) => { setExistingAliases(data); setAliasesLoaded(true); })
+      .catch((err) => console.error("Failed to load aliases:", err));
   };
 
   const loadExcludedShoutouts = () => {
-    setExcludedLoading(true);
+    if (excludedLoaded) return;
     getExcludedShoutouts()
-      .then(setExcludedShoutouts)
-      .catch((err) => console.error("Failed to load excluded shoutouts:", err))
-      .finally(() => setExcludedLoading(false));
+      .then((data) => { setExcludedShoutouts(data); setExcludedLoaded(true); })
+      .catch((err) => console.error("Failed to load excluded shoutouts:", err));
   };
 
-  const handleSaveAliases = async () => {
-    const toSave = Object.entries(aliasInputs)
-      .filter(([, canonical]) => canonical.trim())
-      .map(([alias, canonical_name]) => ({ alias, canonical_name: canonical_name.trim() }));
-    if (!toSave.length) return;
+  const handleAddAlias = async () => {
+    const alias = newAliasWord.trim();
+    const canonical_name = newAliasCanonical.trim();
+    if (!alias || !canonical_name) return;
     setAliasSaving(true);
     try {
-      await bulkCreateAliases(toSave);
+      await bulkCreateAliases([{ alias, canonical_name }]);
+      setExistingAliases((prev) => {
+        const filtered = prev.filter((a) => a.alias !== alias);
+        return [...filtered, { id: Date.now(), alias, canonical_name }].sort((a, b) =>
+          a.alias.localeCompare(b.alias),
+        );
+      });
+      setNewAliasWord("");
+      setNewAliasCanonical("");
       // Re-run fix_names for the current streamer
       const streamer = streamers.find((s) => s.id === streamerFilter);
       if (streamer) {
@@ -358,11 +364,18 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           .post("/transcripts/fix_names/", { streamer_login: streamer.display_name })
           .catch(() => null);
       }
-      setAliasInputs({});
-      setUnmatchedWords([]);
       refreshShoutouts();
     } finally {
       setAliasSaving(false);
+    }
+  };
+
+  const handleDeleteAlias = async (id: number) => {
+    try {
+      await deleteAlias(id);
+      setExistingAliases((prev) => prev.filter((a) => a.id !== id));
+    } catch (err) {
+      console.error("Failed to delete alias:", err);
     }
   };
 
@@ -371,7 +384,9 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
     if (!name) return;
     try {
       const created = await createExcludedShoutout(name);
-      setExcludedShoutouts((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      setExcludedShoutouts((prev) =>
+        [...prev, created].sort((a, b) => a.name.localeCompare(b.name)),
+      );
       setNewExcludedName("");
       refreshShoutouts();
     } catch (err) {
@@ -1271,161 +1286,168 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
       )}
 
       {/* Alias Manager */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Tag size={16} className="text-indigo-500" />
-            Alias Manager
-          </CardTitle>
-          <CardDescription>
-            Map unrecognized words to usernames, or block false positives from shoutouts
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Sub-tabs */}
-          <div className="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg w-fit">
-            <button
-              onClick={() => { setAliasTab("unknown"); if (unmatchedWords.length === 0) loadUnmatchedWords(); }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                aliasTab === "unknown"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Unknown Words
-            </button>
-            <button
-              onClick={() => { setAliasTab("blocked"); if (excludedShoutouts.length === 0) loadExcludedShoutouts(); }}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
-                aliasTab === "blocked"
-                  ? "bg-background shadow-sm text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Blocked from Shoutouts
-            </button>
-          </div>
+      {(() => {
+        // Known user names for datalist autocomplete
+        const knownNames = Array.from(new Set([
+          ...(transcriptData?.top_mentioned_users ?? []).map((u) => u.username),
+          ...(chatData?.top_commenters ?? []).map((c) => c.commenter_display_name ?? "").filter(Boolean),
+        ])).sort();
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Tag size={16} className="text-indigo-500" />
+                Alias Manager
+              </CardTitle>
+              <CardDescription>
+                Map words in transcripts to known usernames, or block false positives from shoutouts
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <datalist id="known-users-list">
+                {knownNames.map((n) => <option key={n} value={n} />)}
+              </datalist>
 
-          {aliasTab === "unknown" && (
-            <div className="space-y-3">
-              <div className="flex gap-2">
+              {/* Sub-tabs */}
+              <div className="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg w-fit">
                 <button
-                  onClick={loadUnmatchedWords}
-                  disabled={unmatchedLoading}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  onClick={() => { setAliasTab("aliases"); loadAliases(); }}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    aliasTab === "aliases"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
-                  {unmatchedLoading ? (
-                    <Loader2 size={12} className="animate-spin" />
-                  ) : (
-                    <TrendingUp size={12} />
-                  )}
-                  Load Words
+                  Aliases
                 </button>
-                {Object.values(aliasInputs).some((v) => v.trim()) && (
-                  <button
-                    onClick={handleSaveAliases}
-                    disabled={aliasSaving}
-                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 transition-colors"
-                  >
-                    {aliasSaving ? (
-                      <Loader2 size={12} className="animate-spin" />
-                    ) : (
-                      <Plus size={12} />
-                    )}
-                    Save Aliases
-                  </button>
-                )}
-              </div>
-              {unmatchedWords.length > 0 && (
-                <div className="border rounded-lg overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead className="bg-muted/50">
-                      <tr>
-                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Word</th>
-                        <th className="text-right px-3 py-2 font-medium text-muted-foreground w-16">Count</th>
-                        <th className="px-3 py-2 font-medium text-muted-foreground w-4">→</th>
-                        <th className="text-left px-3 py-2 font-medium text-muted-foreground">Username</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/50">
-                      {unmatchedWords.map(({ word, count }) => (
-                        <tr key={word} className="hover:bg-muted/20 transition-colors">
-                          <td className="px-3 py-1.5 font-mono font-semibold">{word}</td>
-                          <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{count}</td>
-                          <td className="px-3 py-1.5 text-center text-muted-foreground">→</td>
-                          <td className="px-3 py-1.5">
-                            <input
-                              type="text"
-                              placeholder="canonical name…"
-                              value={aliasInputs[word] ?? ""}
-                              onChange={(e) =>
-                                setAliasInputs((prev) => ({ ...prev, [word]: e.target.value }))
-                              }
-                              className="w-full bg-transparent border border-border/50 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-              {!unmatchedLoading && unmatchedWords.length === 0 && (
-                <p className="text-xs text-muted-foreground">Click &quot;Load Words&quot; to see frequent unrecognized words.</p>
-              )}
-            </div>
-          )}
-
-          {aliasTab === "blocked" && (
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  placeholder="Name to block…"
-                  value={newExcludedName}
-                  onChange={(e) => setNewExcludedName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddExcluded()}
-                  className="flex-1 max-w-[200px] bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
-                />
                 <button
-                  onClick={handleAddExcluded}
-                  disabled={!newExcludedName.trim()}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                  onClick={() => { setAliasTab("blocked"); loadExcludedShoutouts(); }}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+                    aliasTab === "blocked"
+                      ? "bg-background shadow-sm text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
                 >
-                  <Ban size={12} />
-                  Block
+                  Blocked from Shoutouts
                 </button>
               </div>
-              {excludedLoading && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 size={12} className="animate-spin" /> Loading…
-                </div>
-              )}
-              {!excludedLoading && excludedShoutouts.length === 0 && (
-                <p className="text-xs text-muted-foreground">No blocked names yet.</p>
-              )}
-              {excludedShoutouts.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {excludedShoutouts.map((e) => (
-                    <span
-                      key={e.id}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted border border-border/50"
+
+              {aliasTab === "aliases" && (
+                <div className="space-y-3">
+                  {/* Add form */}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      placeholder="word in transcript…"
+                      value={newAliasWord}
+                      onChange={(e) => setNewAliasWord(e.target.value)}
+                      className="w-36 bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                    />
+                    <span className="text-xs text-muted-foreground">→</span>
+                    <input
+                      type="text"
+                      list="known-users-list"
+                      placeholder="canonical username…"
+                      value={newAliasCanonical}
+                      onChange={(e) => setNewAliasCanonical(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddAlias()}
+                      className="w-44 bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                    />
+                    <button
+                      onClick={handleAddAlias}
+                      disabled={!newAliasWord.trim() || !newAliasCanonical.trim() || aliasSaving}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
                     >
-                      {e.name}
-                      <button
-                        onClick={() => handleDeleteExcluded(e.id)}
-                        className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
-                      >
-                        <X size={11} />
-                      </button>
-                    </span>
-                  ))}
+                      {aliasSaving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                      Add
+                    </button>
+                  </div>
+                  {/* Existing aliases */}
+                  {existingAliases.length > 0 && (
+                    <div className="border rounded-lg overflow-hidden">
+                      <table className="w-full text-xs">
+                        <thead className="bg-muted/50">
+                          <tr>
+                            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Alias</th>
+                            <th className="px-3 py-2 text-muted-foreground w-4">→</th>
+                            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Username</th>
+                            <th className="w-8" />
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/50">
+                          {existingAliases.map((a) => (
+                            <tr key={a.id} className="hover:bg-muted/20 transition-colors">
+                              <td className="px-3 py-1.5 font-mono font-semibold">{a.alias}</td>
+                              <td className="px-3 py-1.5 text-center text-muted-foreground">→</td>
+                              <td className="px-3 py-1.5 text-muted-foreground">{a.canonical_name}</td>
+                              <td className="px-3 py-1.5">
+                                <button
+                                  onClick={() => handleDeleteAlias(a.id)}
+                                  className="text-muted-foreground hover:text-destructive transition-colors"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                  {aliasesLoaded && existingAliases.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No aliases yet.</p>
+                  )}
                 </div>
               )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+              {aliasTab === "blocked" && (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      list="known-users-list"
+                      placeholder="Name to block…"
+                      value={newExcludedName}
+                      onChange={(e) => setNewExcludedName(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAddExcluded()}
+                      className="flex-1 max-w-[200px] bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                    />
+                    <button
+                      onClick={handleAddExcluded}
+                      disabled={!newExcludedName.trim()}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    >
+                      <Ban size={12} />
+                      Block
+                    </button>
+                  </div>
+                  {excludedLoaded && excludedShoutouts.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No blocked names yet.</p>
+                  )}
+                  {excludedShoutouts.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {excludedShoutouts.map((e) => (
+                        <span
+                          key={e.id}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-muted border border-border/50"
+                        >
+                          {e.name}
+                          <button
+                            onClick={() => handleDeleteExcluded(e.id)}
+                            className="ml-0.5 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <X size={11} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
             </>
           )}
         </TabsContent>
