@@ -98,6 +98,7 @@ class TranscriptEntry(models.Model):
     streamer = models.ForeignKey(Streamer, on_delete=models.CASCADE, related_name="transcripts")
     start_seconds = models.FloatField()
     end_seconds = models.FloatField()
+    raw_text = models.TextField(default="")
     text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 

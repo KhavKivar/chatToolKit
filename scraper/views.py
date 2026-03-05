@@ -599,6 +599,7 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
                 streamer=streamer,
                 start_seconds=float(start_ms) / 1000.0,
                 end_seconds=float(end_ms) / 1000.0,
+                raw_text=text,
                 text=text,
             ))
 
