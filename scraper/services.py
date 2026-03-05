@@ -389,7 +389,7 @@ def _levenshtein(a: str, b: str) -> int:
 def fix_transcript_usernames(video_id: str) -> int:
     """
     Post-process transcript entries for a video by correcting misspelled
-    usernames using the commenter display names from that video's chat.
+    usernames using all unique commenter display names across the entire DB.
 
     Returns the number of transcript entries that were corrected.
     """
@@ -400,20 +400,14 @@ def fix_transcript_usernames(video_id: str) -> int:
     except Video.DoesNotExist:
         return 0
 
-    # Collect commenter names that appear at least 3 times (active chatters are
-    # more likely to be mentioned by the streamer, reduces false positives)
-    from django.db.models import Count as _Count
-    name_counts = (
-        Comment.objects
-        .filter(video=video)
-        .values('commenter_display_name')
-        .annotate(cnt=_Count('id'))
-        .filter(cnt__gte=3)
-    )
+    # Use all distinct commenter names across the entire DB — broader coverage
+    # than per-video filtering, no arbitrary frequency threshold needed
     names = {
-        row['commenter_display_name'].lower(): row['commenter_display_name']
-        for row in name_counts
-        if row['commenter_display_name'] and len(row['commenter_display_name']) >= 3
+        n.lower(): n
+        for n in Comment.objects
+            .values_list('commenter_display_name', flat=True)
+            .distinct()
+        if n and len(n) >= 3
     }
     if not names:
         return 0
@@ -427,9 +421,10 @@ def fix_transcript_usernames(video_id: str) -> int:
     updated = []
 
     for entry in transcripts:
-        original = entry.text
-        fixed = _fix_names_in_text(original, names)
-        if fixed != original:
+        # Always re-apply from raw_text so improvements stack cleanly
+        source = entry.raw_text if entry.raw_text else entry.text
+        fixed = _fix_names_in_text(source, names)
+        if fixed != entry.text:
             entry.text = fixed
             updated.append(entry)
 
@@ -483,8 +478,9 @@ def _fix_names_in_text(text: str, names: dict) -> str:
             dist = _levenshtein(lower, name_lower)
             max_len = max(len(lower), len(name_lower))
 
-            # Require ≥65% similarity AND max 2 edits
-            if dist <= 2 and dist < best_dist and (1 - dist / max_len) >= 0.65:
+            # Require ≥80% similarity AND max 2 edits (stricter threshold since
+            # the global name dict is much larger, reducing false positives)
+            if dist <= 2 and dist < best_dist and (1 - dist / max_len) >= 0.80:
                 best_dist = dist
                 best_name = name_original
 
