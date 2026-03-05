@@ -57,10 +57,20 @@ interface SearchState {
 }
 
 const STORAGE_KEY = "global_search_state";
+// Bump this version whenever the SearchState shape changes to auto-invalidate old caches
+const CACHE_VERSION = 2;
+const CACHE_VERSION_KEY = "global_search_state_version";
 
 const loadState = (): SearchState | undefined => {
   if (typeof window === "undefined") return undefined;
   try {
+    const storedVersion = localStorage.getItem(CACHE_VERSION_KEY);
+    if (storedVersion !== String(CACHE_VERSION)) {
+      // Stale or missing version — purge cached state
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(CACHE_VERSION_KEY, String(CACHE_VERSION));
+      return undefined;
+    }
     const serializedState = localStorage.getItem(STORAGE_KEY);
     if (serializedState === null) return undefined;
     const parsed = JSON.parse(serializedState) as SearchState;
@@ -78,6 +88,12 @@ const loadState = (): SearchState | undefined => {
   } catch {
     return undefined;
   }
+};
+
+export const clearSearchCache = () => {
+  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(CACHE_VERSION_KEY);
+  window.location.reload();
 };
 
 const initialState: SearchState = loadState() || {

@@ -68,8 +68,8 @@ export function LibraryView() {
     }
   }
 
-  async function loadStreamerVideos(streamerId: string, login: string) {
-    setStreamerVideos([]); // Clear old videos while loading
+  async function loadStreamerVideos(streamerId: string, login: string, clear = true) {
+    if (clear) setStreamerVideos([]); // Only clear on initial load, not polls
     try {
       const data = await getVideos({ streamer_login: login, page_size: 500 });
       const vidsArray = Array.isArray(data) ? data : data.results || [];
@@ -90,7 +90,7 @@ export function LibraryView() {
     let interval: NodeJS.Timeout;
     if (selectedStreamer && !selectedVideo) {
       interval = setInterval(() => {
-        loadStreamerVideos(selectedStreamer.id, selectedStreamer.login);
+        loadStreamerVideos(selectedStreamer.id, selectedStreamer.login, false);
       }, 5000);
     }
     return () => {
@@ -310,7 +310,7 @@ export function LibraryView() {
                     </Badge>
                   )}
                   <div className="absolute top-2 right-2 z-30 flex flex-col items-end gap-1.5 animate-in fade-in zoom-in duration-500">
-                    {v.clip_count && v.clip_count > 0 && (
+                    {v.clip_count != null && v.clip_count > 0 && (
                       <Badge className="text-[10px] font-black uppercase tracking-tighter bg-purple-600 text-white border-none shadow-[0_0_15px_rgba(147,51,234,0.5)] px-2 py-0.5">
                         <Sparkles size={10} className="mr-1 fill-white" />
                         {v.clip_count} AI CLIPS
@@ -322,14 +322,14 @@ export function LibraryView() {
                         Transcript
                       </Badge>
                     )}
-                    {!v.clip_count && !v.has_transcript && (
+                    {(!v.clip_count || v.clip_count === 0) && !v.has_transcript && (
                       <Badge className="text-[10px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-500 border-border/50 border backdrop-blur-sm">
                         DOWNLOADED
                       </Badge>
                     )}
                   </div>
 
-                  {v.clip_count && v.clip_count > 0 && (
+                  {v.clip_count != null && v.clip_count > 0 && (
                     <div className="absolute inset-0 border-2 border-purple-500/30 rounded-t-lg pointer-events-none z-20 group-hover:border-purple-500/50 transition-colors" />
                   )}
                 </div>

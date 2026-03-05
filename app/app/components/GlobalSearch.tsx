@@ -12,6 +12,7 @@ import {
   MessageSquare,
   Sparkles,
   ChevronDown,
+  RotateCcw,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import {
@@ -58,6 +59,7 @@ import {
   setToxicOnly,
   setToxicityThreshold,
   setOnlyTranscripts,
+  clearSearchCache,
 } from "../lib/store/features/searchSlice";
 
 interface Comment {
@@ -821,6 +823,17 @@ export function GlobalSearch() {
               </>
             )}
           </Button>
+
+          {/* ── Clear cache link ── */}
+          <div className="flex justify-end">
+            <button
+              onClick={clearSearchCache}
+              className="text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-1"
+            >
+              <RotateCcw size={10} />
+              Clear search cache
+            </button>
+          </div>
         </CardContent>
       </Card>
 
