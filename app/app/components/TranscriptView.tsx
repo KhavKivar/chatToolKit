@@ -138,7 +138,7 @@ export function TranscriptView({ videoId }: TranscriptViewProps) {
                   {formatTime(entry.start_seconds)}
                 </span>
                 <a
-                  href={`https://www.twitch.tv/videos/${videoId}?t=${formatTime(entry.start_seconds).replace(/:/g, "")}`}
+                  href={`https://www.twitch.tv/videos/${videoId}?t=${Math.floor(entry.start_seconds / 3600)}h${Math.floor((entry.start_seconds % 3600) / 60)}m${Math.floor(entry.start_seconds % 60)}s`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-1 text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1 font-bold"
