@@ -510,8 +510,8 @@ def _fix_names_in_text(text: str, names: dict, aliases: dict = None) -> str:
         for name_lower in candidates:
             dist = _levenshtein_fn(lower, name_lower)
             max_len = max(wlen, len(name_lower))
-            # Require ≥80% similarity AND max 2 edits
-            if dist <= 2 and dist < best_dist and (1 - dist / max_len) >= 0.80:
+            # Require ≥65% similarity AND max 2 edits
+            if dist <= 2 and dist < best_dist and (1 - dist / max_len) >= 0.65:
                 best_dist = dist
                 best_name = names[name_lower]
 
