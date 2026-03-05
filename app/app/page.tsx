@@ -35,12 +35,12 @@ function HomeContent() {
     <div className="min-h-screen bg-background">
       <nav className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="bg-primary p-1.5 rounded-lg text-primary-foreground">
               <Twitch size={24} />
             </div>
             <h1 className="text-xl font-bold tracking-tight">ChatToolkit</h1>
-          </div>
+          </Link>
           <div className="flex items-center gap-6">
             <Link
               href="/search"
