@@ -438,6 +438,27 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
         </div>
       </div>
 
+      <Tabs
+        defaultValue="chat"
+        className="w-full"
+        onValueChange={(val) => { if (val === "transcript") loadTranscriptStats(); }}
+      >
+        <TabsList className="w-full h-12 mb-8 p-1 rounded-xl bg-muted/60 border border-border/50">
+          <TabsTrigger
+            value="chat"
+            className="flex-1 h-full text-sm font-semibold rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground transition-all"
+          >
+            💬 Chat Stats
+          </TabsTrigger>
+          <TabsTrigger
+            value="transcript"
+            className="flex-1 h-full text-sm font-semibold rounded-lg data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-foreground transition-all"
+          >
+            🎙️ Transcript Stats
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="chat" className="space-y-8">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <StatKpiCard
@@ -473,16 +494,6 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           truncate
         />
       </div>
-
-      <Tabs defaultValue="chat" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="chat">Chat Stats</TabsTrigger>
-          <TabsTrigger value="transcript" onClick={loadTranscriptStats}>
-            Transcript Stats
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="chat" className="space-y-8">
       {/* Row 1a: Top Commenters | Most Toxic by Volume */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Power Users */}
