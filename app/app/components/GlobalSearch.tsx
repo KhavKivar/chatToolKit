@@ -977,17 +977,19 @@ export function GlobalSearch() {
           {groups.length > 0 && (
             <div className="space-y-4">
               {groups.map((group, groupIdx) => {
-                const isExpanded = expandedGroups.has(group.video_id);
+                const matchCount = group.comments.length + group.transcripts.length;
+                const isSmall = matchCount <= 10;
+                const isExpanded = isSmall || expandedGroups.has(group.video_id);
                 return (
                 <Card
                   key={group.video_id}
                   className="overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 border-border/60 hover:border-border transition-colors"
                   style={{ animationDelay: `${groupIdx * 50}ms` }}
                 >
-                  {/* Video header — click to expand/collapse */}
+                  {/* Video header — click to expand/collapse (only for >10 matches) */}
                   <CardHeader
-                    className="py-4 bg-linear-to-r from-muted/30 to-transparent cursor-pointer select-none hover:bg-muted/30 transition-colors"
-                    onClick={() => toggleGroup(group.video_id)}
+                    className={`py-4 bg-linear-to-r from-muted/30 to-transparent transition-colors ${isSmall ? "" : "cursor-pointer select-none hover:bg-muted/30"}`}
+                    onClick={isSmall ? undefined : () => toggleGroup(group.video_id)}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-3 min-w-0">
@@ -1031,10 +1033,12 @@ export function GlobalSearch() {
                         >
                           VOD <ExternalLink size={10} />
                         </a>
+                        {!isSmall && (
                         <ChevronDown
                           size={16}
                           className={`text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
                         />
+                        )}
                       </div>
                     </div>
                   </CardHeader>
