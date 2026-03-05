@@ -206,13 +206,17 @@ export const getTranscripts = async (params?: {
   return response.data;
 };
 
-export const getUnmatchedWords = async (
+export const getChatterMentions = async (
   streamerId?: string,
-  minCount = 5,
-  limit = 50,
+  extraNames?: string[],
+  minCount = 1,
 ): Promise<{ word: string; count: number }[]> => {
   const response = await api.get("/transcripts/unmatched_words/", {
-    params: { streamer_id: streamerId, min_count: minCount, limit },
+    params: {
+      streamer_id: streamerId,
+      min_count: minCount,
+      extra_names: extraNames?.join(',') || undefined,
+    },
   });
   return response.data;
 };

@@ -773,64 +773,47 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='unmatched_words')
     def unmatched_words(self, request):
         """
-        GET /api/transcripts/unmatched_words/?streamer_id=<id>&min_count=5&limit=50
-        Returns frequent words in transcripts that are not commenter names or aliases.
+        GET /api/transcripts/unmatched_words/?streamer_id=<id>&min_count=1&extra_names=foo,bar
+        Takes ALL distinct commenter display names as a set (+ any extra_names supplied),
+        checks each one against the transcript word counts, and returns those that appear
+        at least min_count times — sorted by count descending.
         """
         import re
         from collections import Counter
 
         streamer_id = request.query_params.get('streamer_id')
-        min_count = int(request.query_params.get('min_count', 5))
-        limit = int(request.query_params.get('limit', 50))
+        min_count = int(request.query_params.get('min_count', 1))
+        extra_raw = request.query_params.get('extra_names', '')
+        extra_names = [n.strip() for n in extra_raw.split(',') if n.strip()] if extra_raw else []
 
+        # Build transcript word counts
         transcript_qs = TranscriptEntry.objects.all()
         if streamer_id:
             transcript_qs = transcript_qs.filter(streamer_id=streamer_id)
-        transcripts = transcript_qs.only('text').order_by('-id')[:15000]
+        transcripts = transcript_qs.only('text').order_by('-id')[:50000]
 
-        # Build known names set (commenter names + alias aliases + alias canonical names)
-        comment_qs = Comment.objects.all()
-        if streamer_id:
-            comment_qs = comment_qs.filter(video__streamer_id=streamer_id)
-        known_names = set(
-            n.lower() for n in
-            comment_qs.values_list('commenter_display_name', flat=True).distinct()
+        full_text = ' '.join(t.text for t in transcripts if t.text).lower()
+        word_counts = Counter(re.findall(r'\b\w+\b', full_text))
+
+        # Chatter names set: ALL distinct commenter display names in DB
+        all_chatters = set(
+            n for n in
+            Comment.objects.values_list('commenter_display_name', flat=True).distinct()
             if n
         )
+        # Also add alias canonical names and any extra names from client
         for ua in UserAlias.objects.all():
-            if ua.alias:
-                known_names.add(ua.alias.lower())
             if ua.canonical_name:
-                known_names.add(ua.canonical_name.lower())
+                all_chatters.add(ua.canonical_name)
+        all_chatters.update(extra_names)
 
-        STOP_WORDS = {
-            'a', 'the', 'and', 'or', 'to', 'of', 'in', 'is', 'it', 'for', 'with', 'on', 'as', 'at', 'this', 'that',
-            'from', 'but', 'not', 'by', 'an', 'be', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did',
-            'if', 'then', 'than', 'up', 'down', 'out', 'off', 'me', 'you', 'he', 'she', 'they', 'them', 'my', 'your',
-            'his', 'her', 'their', 'our', 'what', 'which', 'who', 'how', 'where', 'when', 'why', 'all', 'will', 'about',
-            'la', 'el', 'en', 'y', 'de', 'un', 'una', 'con', 'por', 'que', 'lo', 'los', 'las', 'del', 'mi', 'tu',
-            'su', 'nos', 'os', 'les', 'este', 'esta', 'esto', 'eso', 'para', 'porque', 'pero', 'como', 'si', 'no',
-            'ya', 'muy', 'mas', 'tan', 'todo', 'nada', 'otro', 'cada', 'donde', 'cual', 'estos', 'estas', 'ser',
-            'estar', 'ha', 'has', 'han', 'hay',
-            'like', 'know', 'just', 'get', 'think', 'yeah', 'okay', 'right', 'well', 'really', 'now', 'time', 'good',
-            'see', 'can', 'don', 'actually', 'maybe', 'lot', 'little', 'bit', 'would', 'going', 'there', 'mean', 'one',
-            'here', 'man', 'got', 'something', 'everything', 'everyone', 'someone', 'also', 'even', 'still', 'back',
-            'way', 'because', 'two', 'more', 'some', 'any', 'said', 'want', 'need', 'make', 'take', 'come', 'say',
-        }
+        results = []
+        for name in all_chatters:
+            count = word_counts.get(name.lower(), 0)
+            if count >= min_count:
+                results.append({'word': name, 'count': count})
 
-        word_counter: Counter = Counter()
-        for t in transcripts:
-            if t.text:
-                for w in re.findall(r'\b[a-z]{3,}\b', t.text.lower()):
-                    if w not in STOP_WORDS and w not in known_names:
-                        word_counter[w] += 1
-
-        results = [
-            {"word": w, "count": c}
-            for w, c in word_counter.most_common(limit * 3)
-            if c >= min_count
-        ][:limit]
-
+        results.sort(key=lambda x: x['count'], reverse=True)
         return Response(results)
 
     @action(detail=False, methods=['post'], url_path='fix_names')

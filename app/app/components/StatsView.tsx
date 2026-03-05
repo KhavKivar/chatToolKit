@@ -23,6 +23,7 @@ import api, {
   getAliases,
   bulkCreateAliases,
   deleteAlias,
+  getChatterMentions,
   getExcludedShoutouts,
   createExcludedShoutout,
   deleteExcludedShoutout,
@@ -256,6 +257,12 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
   const [newAliasWord, setNewAliasWord] = useState("");
   const [newAliasCanonical, setNewAliasCanonical] = useState("");
   const [aliasSaving, setAliasSaving] = useState(false);
+  const [chatterMentions, setChatterMentions] = useState<{ word: string; count: number }[]>([]);
+  const [mentionsLoaded, setMentionsLoaded] = useState(false);
+  const [mentionsLoading, setMentionsLoading] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
+  const [extraNamesInput, setExtraNamesInput] = useState("");
+  const [extraNames, setExtraNames] = useState<string[]>([]);
   const [excludedShoutouts, setExcludedShoutouts] = useState<{ id: number; name: string }[]>([]);
   const [excludedLoaded, setExcludedLoaded] = useState(false);
   const [newExcludedName, setNewExcludedName] = useState("");
@@ -270,6 +277,8 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
     setExcludedLoaded(false);
     setExistingAliases([]);
     setExcludedShoutouts([]);
+    setChatterMentions([]);
+    setMentionsLoaded(false);
     const params = new URLSearchParams(searchParams.toString());
     if (val) {
       params.set("streamer", val);
@@ -333,6 +342,23 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
     getAliases()
       .then((data) => { setExistingAliases(data); setAliasesLoaded(true); })
       .catch((err) => console.error("Failed to load aliases:", err));
+  };
+
+  const loadChatterMentions = (names?: string[]) => {
+    setMentionsLoading(true);
+    getChatterMentions(streamerFilter || undefined, names ?? extraNames)
+      .then((data) => { setChatterMentions(data); setMentionsLoaded(true); })
+      .catch((err) => console.error("Failed to load chatter mentions:", err))
+      .finally(() => setMentionsLoading(false));
+  };
+
+  const handleAddExtraName = () => {
+    const name = extraNamesInput.trim();
+    if (!name || extraNames.includes(name)) return;
+    const updated = [...extraNames, name];
+    setExtraNames(updated);
+    setExtraNamesInput("");
+    if (mentionsLoaded) loadChatterMentions(updated);
   };
 
   const loadExcludedShoutouts = () => {
@@ -1311,7 +1337,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
               {/* Sub-tabs */}
               <div className="flex gap-1 mb-4 p-1 bg-muted/50 rounded-lg w-fit">
                 <button
-                  onClick={() => { setAliasTab("aliases"); loadAliases(); }}
+                  onClick={() => { setAliasTab("aliases"); loadAliases(); if (!mentionsLoaded) loadChatterMentions(); }}
                   className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-colors ${
                     aliasTab === "aliases"
                       ? "bg-background shadow-sm text-foreground"
@@ -1333,58 +1359,52 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
               </div>
 
               {aliasTab === "aliases" && (
-                <div className="space-y-3">
-                  {/* Add form */}
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="text"
-                      placeholder="word in transcript…"
-                      value={newAliasWord}
-                      onChange={(e) => setNewAliasWord(e.target.value)}
-                      className="w-36 bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
-                    />
-                    <span className="text-xs text-muted-foreground">→</span>
-                    <input
-                      type="text"
-                      list="known-users-list"
-                      placeholder="canonical username…"
-                      value={newAliasCanonical}
-                      onChange={(e) => setNewAliasCanonical(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleAddAlias()}
-                      className="w-44 bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
-                    />
-                    <button
-                      onClick={handleAddAlias}
-                      disabled={!newAliasWord.trim() || !newAliasCanonical.trim() || aliasSaving}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
-                    >
-                      {aliasSaving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
-                      Add
-                    </button>
+                <div className="space-y-4">
+                  {/* Manual alias add form */}
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Add alias manually:</p>
+                    <div className="flex gap-2 items-center flex-wrap">
+                      <input
+                        type="text"
+                        placeholder="word in transcript…"
+                        value={newAliasWord}
+                        onChange={(e) => setNewAliasWord(e.target.value)}
+                        className="w-36 bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                      />
+                      <span className="text-xs text-muted-foreground">→</span>
+                      <input
+                        type="text"
+                        list="known-users-list"
+                        placeholder="canonical username…"
+                        value={newAliasCanonical}
+                        onChange={(e) => setNewAliasCanonical(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddAlias()}
+                        className="w-44 bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                      />
+                      <button
+                        onClick={handleAddAlias}
+                        disabled={!newAliasWord.trim() || !newAliasCanonical.trim() || aliasSaving}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                      >
+                        {aliasSaving ? <Loader2 size={12} className="animate-spin" /> : <Plus size={12} />}
+                        Add
+                      </button>
+                    </div>
                   </div>
+
                   {/* Existing aliases */}
-                  {existingAliases.length > 0 && (
+                  {aliasesLoaded && existingAliases.length > 0 && (
                     <div className="border rounded-lg overflow-hidden">
+                      <div className="bg-muted/50 px-3 py-1.5 text-xs font-medium text-muted-foreground">Existing aliases</div>
                       <table className="w-full text-xs">
-                        <thead className="bg-muted/50">
-                          <tr>
-                            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Alias</th>
-                            <th className="px-3 py-2 text-muted-foreground w-4">→</th>
-                            <th className="text-left px-3 py-2 font-medium text-muted-foreground">Username</th>
-                            <th className="w-8" />
-                          </tr>
-                        </thead>
                         <tbody className="divide-y divide-border/50">
                           {existingAliases.map((a) => (
                             <tr key={a.id} className="hover:bg-muted/20 transition-colors">
                               <td className="px-3 py-1.5 font-mono font-semibold">{a.alias}</td>
                               <td className="px-3 py-1.5 text-center text-muted-foreground">→</td>
                               <td className="px-3 py-1.5 text-muted-foreground">{a.canonical_name}</td>
-                              <td className="px-3 py-1.5">
-                                <button
-                                  onClick={() => handleDeleteAlias(a.id)}
-                                  className="text-muted-foreground hover:text-destructive transition-colors"
-                                >
+                              <td className="px-3 py-1.5 text-right">
+                                <button onClick={() => handleDeleteAlias(a.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                                   <X size={12} />
                                 </button>
                               </td>
@@ -1394,9 +1414,90 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
                       </table>
                     </div>
                   )}
-                  {aliasesLoaded && existingAliases.length === 0 && (
-                    <p className="text-xs text-muted-foreground">No aliases yet.</p>
-                  )}
+
+                  {/* Chatter mentions lookup */}
+                  <div className="border-t pt-4 space-y-3">
+                    <p className="text-xs text-muted-foreground">Check which chatters appear in transcripts:</p>
+                    <div className="flex gap-2 flex-wrap items-center">
+                      <button
+                        onClick={() => loadChatterMentions()}
+                        disabled={mentionsLoading}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-muted hover:bg-muted/80 border border-border/50 disabled:opacity-50 transition-colors"
+                      >
+                        {mentionsLoading ? <Loader2 size={12} className="animate-spin" /> : <Users size={12} />}
+                        {mentionsLoaded ? "Refresh" : "Load chatters"}
+                      </button>
+                      {/* Add extra names */}
+                      <input
+                        type="text"
+                        placeholder="Add name to check…"
+                        value={extraNamesInput}
+                        onChange={(e) => setExtraNamesInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleAddExtraName()}
+                        className="w-40 bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                      />
+                      <button
+                        onClick={handleAddExtraName}
+                        disabled={!extraNamesInput.trim()}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-muted hover:bg-muted/80 border border-border/50 disabled:opacity-50 transition-colors"
+                      >
+                        <Plus size={12} /> Add
+                      </button>
+                    </div>
+                    {extraNames.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {extraNames.map((n) => (
+                          <span key={n} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-primary/10 border border-primary/20 text-primary">
+                            {n}
+                            <button onClick={() => setExtraNames((prev) => prev.filter((x) => x !== n))} className="hover:text-destructive transition-colors"><X size={10} /></button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {mentionsLoaded && chatterMentions.length > 0 && (
+                      <>
+                        <input
+                          type="text"
+                          placeholder="Filter results…"
+                          value={mentionSearch}
+                          onChange={(e) => setMentionSearch(e.target.value)}
+                          className="w-full max-w-xs bg-transparent border border-border/50 rounded-md px-3 py-1.5 text-xs focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground/50"
+                        />
+                        <div className="border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+                          <table className="w-full text-xs">
+                            <thead className="bg-muted/50 sticky top-0">
+                              <tr>
+                                <th className="text-left px-3 py-2 font-medium text-muted-foreground">Chatter</th>
+                                <th className="text-right px-3 py-2 font-medium text-muted-foreground w-16">Mentions</th>
+                                <th className="w-16 px-3 py-2 text-muted-foreground text-right">Alias</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border/50">
+                              {chatterMentions
+                                .filter((m) => !mentionSearch || m.word.toLowerCase().includes(mentionSearch.toLowerCase()))
+                                .map(({ word, count }) => (
+                                  <tr key={word} className="hover:bg-muted/20 transition-colors">
+                                    <td className="px-3 py-1.5 font-mono font-semibold">{word}</td>
+                                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">{count}</td>
+                                    <td className="px-3 py-1.5 text-right">
+                                      <button
+                                        onClick={() => { setNewAliasCanonical(word); setNewAliasWord(""); }}
+                                        className="text-xs text-primary hover:underline"
+                                      >
+                                        alias
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                    {mentionsLoaded && chatterMentions.length === 0 && (
+                      <p className="text-xs text-muted-foreground">No chatters found in transcripts.</p>
+                    )}
+                  </div>
                 </div>
               )}
 
