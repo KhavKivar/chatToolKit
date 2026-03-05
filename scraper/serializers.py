@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip, TranscriptEntry
+from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip, TranscriptEntry, UserAlias, ExcludedShoutout
 
 class VideoSerializer(serializers.ModelSerializer):
     clip_count = serializers.SerializerMethodField()
@@ -87,3 +87,15 @@ class TranscriptEntrySerializer(serializers.ModelSerializer):
     class Meta:
         model = TranscriptEntry
         fields = '__all__'
+
+
+class UserAliasSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = UserAlias
+        fields = ['id', 'alias', 'canonical_name']
+
+
+class ExcludedShoutoutSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExcludedShoutout
+        fields = ['id', 'name']
