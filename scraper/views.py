@@ -13,7 +13,7 @@ from .serializers import (
 )
 from .services import TwitchScraperService
 from datetime import datetime, timezone, timedelta
-from django.db.models import Count, Q, F, FloatField, ExpressionWrapper, Case, When, IntegerField
+from django.db.models import Count, Q, F, FloatField, ExpressionWrapper, Case, When, IntegerField, Exists, OuterRef
 from django.db.models.functions import Cast
 
 
@@ -29,6 +29,17 @@ class VideoViewSet(viewsets.ModelViewSet):
     queryset = Video.objects.all().order_by('-created_at')
     serializer_class = VideoSerializer
     filterset_fields = ['streamer', 'streamer_login']
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        has_transcript = self.request.query_params.get('has_transcript')
+        if has_transcript is not None:
+            tx_exists = Exists(TranscriptEntry.objects.filter(video=OuterRef('pk')))
+            if has_transcript.lower() in ('true', '1'):
+                qs = qs.filter(tx_exists)
+            elif has_transcript.lower() in ('false', '0'):
+                qs = qs.filter(~tx_exists)
+        return qs
 
     @action(detail=False, methods=['post'], url_path='scrape/(?P<video_id>[^/.]+)')
     def scrape(self, request, video_id=None):
