@@ -20,6 +20,7 @@ import {
   getStreamers,
   getCommentContext,
   getTranscripts,
+  getAliases,
 } from "../lib/api";
 import {
   Dialog,
@@ -191,6 +192,27 @@ function getSearchTerms(keyword: string): string[] {
   return [...ngrams];
 }
 
+// Given a list of keywords + alias table, returns a Map<expandedTerm, originalKeyword>
+// so backend searches also cover alias expansions and we can attribute matches back.
+function buildExpansionMap(
+  keywords: string[],
+  aliases: { alias: string; canonical_name: string }[],
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const kw of keywords) {
+    map.set(kw.toLowerCase(), kw);
+    for (const a of aliases) {
+      if (a.alias.toLowerCase() === kw.toLowerCase()) {
+        map.set(a.canonical_name.toLowerCase(), kw);
+      }
+      if (a.canonical_name.toLowerCase() === kw.toLowerCase()) {
+        map.set(a.alias.toLowerCase(), kw);
+      }
+    }
+  }
+  return map;
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export function GlobalSearch() {
   const dispatch = useDispatch();
@@ -215,6 +237,7 @@ export function GlobalSearch() {
 
   const searchParams = useSearchParams();
   const [streamers, setStreamers] = React.useState<Streamer[]>([]);
+  const [aliases, setAliases] = React.useState<{ alias: string; canonical_name: string }[]>([]);
 
   // Sentinel ref for infinite scroll
   const sentinelRef = React.useRef<HTMLDivElement>(null);
@@ -352,6 +375,10 @@ export function GlobalSearch() {
         // Scan enough pages to cover multiple VODs; infinite scroll loads even more
         const BATCH_SIZE = isLoadMore ? 15 : 10;
 
+        // Expand keywords with aliases (e.g. "gds" → also search "guldasan")
+        const expansionMap = buildExpansionMap(keywords, aliases);
+        const expandedTerms = [...expansionMap.keys()];
+
         while (hasMoreOnServer && page <= startPage + BATCH_SIZE - 1) {
           // 1. Fetch Comments
           // .catch handles 404 from DRF when page is out of range
@@ -360,7 +387,7 @@ export function GlobalSearch() {
             ? getComments({
                 page,
                 page_size: 500,
-                search_or: keywords.flatMap(getSearchTerms).join(","),
+                search_or: expandedTerms.flatMap(getSearchTerms).join(","),
                 exclude_users: excludedUsers.join(","),
                 min_toxicity: toxicOnly ? toxicityThreshold : undefined,
                 video__streamer: activeFilter || undefined,
@@ -373,7 +400,7 @@ export function GlobalSearch() {
               ? getTranscripts({
                   page,
                   page_size: 500,
-                  search_or: keywords.join(","),
+                  search_or: expandedTerms.join(","),
                   streamer: activeFilter || undefined,
                 }).catch(() => emptyPage)
               : Promise.resolve(emptyPage);
@@ -400,16 +427,13 @@ export function GlobalSearch() {
             if (!c.video_id) continue;
             let best = 0,
               bestKw = "";
-            for (const kw of keywords) {
-              const msgMatch = bestWordMatch(kw, c.message ?? "");
-              const nameMatch = bestWordMatch(
-                kw,
-                c.commenter_display_name ?? "",
-              );
+            for (const term of expandedTerms) {
+              const msgMatch = bestWordMatch(term, c.message ?? "");
+              const nameMatch = bestWordMatch(term, c.commenter_display_name ?? "");
               const s = Math.max(msgMatch, nameMatch);
               if (s > best) {
                 best = s;
-                bestKw = kw;
+                bestKw = expansionMap.get(term) ?? term;
               }
             }
             if (keywords.length === 0 && toxicOnly) {
@@ -431,11 +455,11 @@ export function GlobalSearch() {
           for (const t of newTranscriptBatch) {
             let best = 0,
               bestKw = "";
-            for (const kw of keywords) {
-              const s = bestWordMatch(kw, t.text ?? "");
+            for (const term of expandedTerms) {
+              const s = bestWordMatch(term, t.text ?? "");
               if (s > best) {
                 best = s;
-                bestKw = kw;
+                bestKw = expansionMap.get(term) ?? term;
               }
             }
             if (best >= THRESHOLD) {
@@ -589,6 +613,7 @@ export function GlobalSearch() {
       getStreamers().then((res) => {
         setStreamers(res.results || res);
       });
+      getAliases().then(setAliases).catch(() => null);
     };
     init();
   }, [dispatch, searchParams]);
