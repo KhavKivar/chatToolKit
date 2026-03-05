@@ -398,7 +398,13 @@ def build_global_names_dict():
     }
 
 
-def fix_transcript_usernames(video_id: str, names: dict = None) -> int:
+def build_aliases_dict():
+    """Build alias → canonical_name mapping from UserAlias table."""
+    from .models import UserAlias
+    return {a.alias.lower(): a.canonical_name for a in UserAlias.objects.all()}
+
+
+def fix_transcript_usernames(video_id: str, names: dict = None, aliases: dict = None) -> int:
     """
     Post-process transcript entries for a video by correcting misspelled
     usernames using all unique commenter display names across the entire DB.
@@ -415,7 +421,9 @@ def fix_transcript_usernames(video_id: str, names: dict = None) -> int:
 
     if names is None:
         names = build_global_names_dict()
-    if not names:
+    if aliases is None:
+        aliases = build_aliases_dict()
+    if not names and not aliases:
         return 0
 
     # Also add the streamer's display name
@@ -429,7 +437,7 @@ def fix_transcript_usernames(video_id: str, names: dict = None) -> int:
     for entry in transcripts:
         # Always re-apply from raw_text so improvements stack cleanly
         source = entry.raw_text if entry.raw_text else entry.text
-        fixed = _fix_names_in_text(source, names)
+        fixed = _fix_names_in_text(source, names, aliases=aliases)
         if fixed != entry.text:
             entry.text = fixed
             updated.append(entry)
@@ -440,10 +448,11 @@ def fix_transcript_usernames(video_id: str, names: dict = None) -> int:
     return len(updated)
 
 
-def _fix_names_in_text(text: str, names: dict) -> str:
+def _fix_names_in_text(text: str, names: dict, aliases: dict = None) -> str:
     """
     Replace words in text that are close matches to known usernames.
     names: {lowercase_name: original_case_name}
+    aliases: {alias_lower: canonical_name} — checked first, exact match only
     """
     import re as _re
     try:
@@ -476,6 +485,11 @@ def _fix_names_in_text(text: str, names: dict) -> str:
             continue
 
         lower = stripped.lower()
+
+        # Alias exact match — highest priority (catches nicknames like "caviar" → "KhavKivar")
+        if aliases and lower in aliases:
+            result.append(prefix + aliases[lower] + suffix)
+            continue
 
         # Exact match — fix casing only
         if lower in names:
