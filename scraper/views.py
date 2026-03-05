@@ -296,18 +296,25 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
         top_complex_words = Counter(complex_words).most_common(10)
         top_complex_words = [{"word": w, "count": c} for w, c in top_complex_words]
 
-        community_names = (
-            qs.values('commenter_display_name')
-            .annotate(comment_count=Count('id'))
-            .order_by('-comment_count')
-            .values_list('commenter_display_name', flat=True)[:200]
+        from .models import UserAlias
+        commenter_names = set(
+            name for name in
+            qs.values_list('commenter_display_name', flat=True).distinct()
+            if name and len(name) > 3
         )
-        community_names = [name for name in community_names if name and len(name) > 3]
+        alias_canonical_names = set(
+            a.canonical_name for a in UserAlias.objects.all()
+            if a.canonical_name and len(a.canonical_name) > 3
+        )
+        all_names_to_check = commenter_names | alias_canonical_names
+
+        # Build word Counter from transcript for O(1) lookups (no regex per name)
+        full_transcript_text = " ".join([t.text for t in transcripts if t.text]).lower()
+        word_counts = Counter(re.findall(r'\b\w+\b', full_transcript_text))
 
         mention_counts = Counter()
-        full_transcript_text = " ".join([t.text for t in transcripts if t.text]).lower()
-        for name in community_names:
-            count = len(re.findall(r'\b' + re.escape(name.lower()) + r'\b', full_transcript_text))
+        for name in all_names_to_check:
+            count = word_counts.get(name.lower(), 0)
             if count > 0:
                 mention_counts[name] = count
 
@@ -423,23 +430,24 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
         top_complex_words = [{"word": w, "count": c} for w, c in top_complex_words]
 
         # 9. Top Mentioned Users (Who does the streamer talk about?)
-        # We look for names of active community members in the transcripts
-        community_names = (
-            qs.values('commenter_display_name')
-            .annotate(comment_count=Count('id'))
-            .order_by('-comment_count')
-            .values_list('commenter_display_name', flat=True)[:200]
+        from .models import UserAlias
+        commenter_names = set(
+            name for name in
+            qs.values_list('commenter_display_name', flat=True).distinct()
+            if name and len(name) > 3
         )
-        # Filter out short names or common words to avoid false positives
-        community_names = [name for name in community_names if name and len(name) > 3]
-        
+        alias_canonical_names = set(
+            a.canonical_name for a in UserAlias.objects.all()
+            if a.canonical_name and len(a.canonical_name) > 3
+        )
+        all_names_to_check = commenter_names | alias_canonical_names
+
         mention_counts = Counter()
-        # Combine transcripts for faster searching
         full_transcript_text = " ".join([t.text for t in transcripts if t.text]).lower()
-        
-        for name in community_names:
-            # We use word boundaries to avoid matching sub-strings
-            count = len(re.findall(r'\b' + re.escape(name.lower()) + r'\b', full_transcript_text))
+        word_counts = Counter(re.findall(r'\b\w+\b', full_transcript_text))
+
+        for name in all_names_to_check:
+            count = word_counts.get(name.lower(), 0)
             if count > 0:
                 mention_counts[name] = count
         
