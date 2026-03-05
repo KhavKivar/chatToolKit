@@ -620,3 +620,60 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
             },
             status=http_status
         )
+
+    @action(detail=False, methods=['post'], url_path='fix_names')
+    def fix_names(self, request):
+        """
+        POST /api/transcripts/fix_names/
+        Body (one of):
+          { "video_id": "123" }
+          { "streamer_login": "shigity" }
+          { "all": true }
+
+        Re-applies username correction from raw_text for the specified transcripts.
+        """
+        video_id = request.data.get('video_id')
+        streamer_login = request.data.get('streamer_login')
+        fix_all = request.data.get('all', False)
+
+        if not video_id and not streamer_login and not fix_all:
+            return Response(
+                {'error': 'Provide video_id, streamer_login, or all=true'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if video_id:
+            video_ids = [video_id]
+        elif streamer_login:
+            video_ids = list(
+                Video.objects
+                .filter(streamer_login__iexact=streamer_login)
+                .filter(transcriptentry__isnull=False)
+                .values_list('id', flat=True)
+                .distinct()
+            )
+            if not video_ids:
+                return Response(
+                    {'error': f"No transcribed videos found for '{streamer_login}'"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        else:
+            video_ids = list(
+                Video.objects
+                .filter(transcriptentry__isnull=False)
+                .values_list('id', flat=True)
+                .distinct()
+            )
+
+        results = {}
+        total_corrected = 0
+        for vid in video_ids:
+            corrected = fix_transcript_usernames(vid)
+            results[vid] = corrected
+            total_corrected += corrected
+
+        return Response({
+            'videos_processed': len(video_ids),
+            'total_corrected': total_corrected,
+            'details': results,
+        })
