@@ -495,10 +495,10 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
             <CardDescription>Most messages sent overall</CardDescription>
           </CardHeader>
           <CardContent className="h-[280px]">
-            {data.top_commenters.length > 0 ? (
+            {chatData.top_commenters.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={data.top_commenters}
+                  data={chatData.top_commenters}
                   layout="vertical"
                   margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
                 >
@@ -551,10 +551,10 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
             <CardDescription>Highest count of flagged messages</CardDescription>
           </CardHeader>
           <CardContent className="h-[280px]">
-            {data.most_toxic_absolute.length > 0 ? (
+            {chatData.most_toxic_absolute.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={data.most_toxic_absolute}
+                  data={chatData.most_toxic_absolute}
                   layout="vertical"
                   margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
                 >
@@ -611,10 +611,10 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           <CardDescription>% flagged per user (min 10 msgs)</CardDescription>
         </CardHeader>
         <CardContent className="h-[280px]">
-          {data.most_toxic_relative.length > 0 ? (
+          {chatData.most_toxic_relative.length > 0 ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={data.most_toxic_relative}
+                data={chatData.most_toxic_relative}
                 layout="vertical"
                 margin={{ left: 8, right: 48, top: 0, bottom: 0 }}
               >
@@ -909,7 +909,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={data.top_streamer_words}
+                data={transcriptData.top_streamer_words}
                 layout="vertical"
                 margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
               >
@@ -975,7 +975,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           <CardContent className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={data.top_complex_words}
+                data={transcriptData.top_complex_words}
                 layout="vertical"
                 margin={{ left: 8, right: 40, top: 0, bottom: 0 }}
               >
@@ -1115,7 +1115,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
           <CardContent className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
-                data={data.top_mentioned_users}
+                data={transcriptData.top_mentioned_users}
                 layout="vertical"
                 margin={{ left: 8, right: 32, top: 0, bottom: 0 }}
               >
