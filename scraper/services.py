@@ -370,3 +370,127 @@ class TwitchScraperService:
     def cleanup(self):
         if os.path.exists(self.cookie_path):
             os.remove(self.cookie_path)
+
+
+# ── Transcript post-processing: fix usernames using chat commenter names ──────
+
+def _levenshtein(a: str, b: str) -> int:
+    m, n = len(a), len(b)
+    dp = list(range(n + 1))
+    for i in range(1, m + 1):
+        prev, dp[0] = dp[0], i
+        for j in range(1, n + 1):
+            temp = dp[j]
+            dp[j] = prev if a[i - 1] == b[j - 1] else 1 + min(dp[j], dp[j - 1], prev)
+            prev = temp
+    return dp[n]
+
+
+def fix_transcript_usernames(video_id: str) -> int:
+    """
+    Post-process transcript entries for a video by correcting misspelled
+    usernames using the commenter display names from that video's chat.
+
+    Returns the number of transcript entries that were corrected.
+    """
+    from .models import TranscriptEntry, Comment, Video
+
+    try:
+        video = Video.objects.get(pk=video_id)
+    except Video.DoesNotExist:
+        return 0
+
+    # Collect commenter names that appear at least 3 times (active chatters are
+    # more likely to be mentioned by the streamer, reduces false positives)
+    from django.db.models import Count as _Count
+    name_counts = (
+        Comment.objects
+        .filter(video=video)
+        .values('commenter_display_name')
+        .annotate(cnt=_Count('id'))
+        .filter(cnt__gte=3)
+    )
+    names = {
+        row['commenter_display_name'].lower(): row['commenter_display_name']
+        for row in name_counts
+        if row['commenter_display_name'] and len(row['commenter_display_name']) >= 3
+    }
+    if not names:
+        return 0
+
+    # Also add the streamer's display name
+    if video.streamer and video.streamer.display_name:
+        sn = video.streamer.display_name
+        names[sn.lower()] = sn
+
+    transcripts = TranscriptEntry.objects.filter(video=video)
+    updated = []
+
+    for entry in transcripts:
+        original = entry.text
+        fixed = _fix_names_in_text(original, names)
+        if fixed != original:
+            entry.text = fixed
+            updated.append(entry)
+
+    if updated:
+        TranscriptEntry.objects.bulk_update(updated, ['text'])
+
+    return len(updated)
+
+
+def _fix_names_in_text(text: str, names: dict) -> str:
+    """
+    Replace words in text that are close matches to known usernames.
+    names: {lowercase_name: original_case_name}
+    """
+    import re as _re
+
+    words = _re.split(r'(\s+)', text)  # preserve whitespace
+    result = []
+
+    for token in words:
+        if not token.strip():
+            result.append(token)
+            continue
+
+        # Strip punctuation for matching, preserve it for output
+        stripped = token.strip('.,!?;:\'"()[]{}')
+        prefix = token[:len(token) - len(token.lstrip('.,!?;:\'"()[]{}'))]
+        suffix = token[len(token) - len(token.rstrip('.,!?;:\'"()[]{}')) :] if token.rstrip('.,!?;:\'"()[]{}') != token else ''
+
+        if len(stripped) < 3:
+            result.append(token)
+            continue
+
+        lower = stripped.lower()
+
+        # Exact match — fix casing only
+        if lower in names:
+            result.append(prefix + names[lower] + suffix)
+            continue
+
+        # Fuzzy match — only for words that look like they could be names
+        # (contain letters, not common English words)
+        best_name = None
+        best_dist = float('inf')
+
+        for name_lower, name_original in names.items():
+            # Only compare names of similar length (within 2 chars)
+            if abs(len(lower) - len(name_lower)) > 2:
+                continue
+
+            dist = _levenshtein(lower, name_lower)
+            max_len = max(len(lower), len(name_lower))
+
+            # Require ≥65% similarity AND max 2 edits
+            if dist <= 2 and dist < best_dist and (1 - dist / max_len) >= 0.65:
+                best_dist = dist
+                best_name = name_original
+
+        if best_name and best_dist > 0:  # dist > 0 means it's a correction, not exact
+            result.append(prefix + best_name + suffix)
+        else:
+            result.append(token)
+
+    return ''.join(result)
