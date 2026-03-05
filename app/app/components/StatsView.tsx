@@ -151,6 +151,7 @@ interface TranscriptStatsData {
 
 interface Streamer {
   id: string;
+  login: string;
   display_name: string;
 }
 
@@ -387,7 +388,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
       const streamer = streamers.find((s) => s.id === streamerFilter);
       if (streamer) {
         await api
-          .post("/transcripts/fix_names/", { streamer_login: streamer.display_name })
+          .post("/transcripts/fix_names/", { streamer_login: streamer.login })
           .catch(() => null);
       }
       refreshShoutouts();
