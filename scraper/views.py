@@ -186,6 +186,135 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'])
+    def stats_chat(self, request):
+        """Fast stats: DB aggregations only (commenters, toxicity, videos, hourly)."""
+        streamer_id = request.query_params.get('streamer_id')
+
+        qs = Comment.objects.all()
+        if streamer_id:
+            qs = qs.filter(video__streamer_id=streamer_id)
+
+        top_commenters = qs.values('commenter_login', 'commenter_display_name')\
+            .annotate(count=Count('id'))\
+            .order_by('-count')[:10]
+
+        most_toxic_absolute = qs.filter(is_toxic=True)\
+            .values('commenter_login', 'commenter_display_name')\
+            .annotate(toxic_count=Count('id'))\
+            .order_by('-toxic_count')[:10]
+
+        most_toxic_relative = qs.values('commenter_login', 'commenter_display_name')\
+            .annotate(
+                total_count=Count('id'),
+                toxic_count=Count('id', filter=Q(is_toxic=True))
+            )\
+            .filter(total_count__gte=10)\
+            .annotate(
+                ratio=ExpressionWrapper(
+                    Cast(F('toxic_count'), FloatField()) / Cast(F('total_count'), FloatField()) * 100,
+                    output_field=FloatField()
+                )
+            )\
+            .order_by('-ratio')[:10]
+
+        toxicity_by_video = qs.values('video__id', 'video__title', 'video__streamer_display_name', 'video__created_at', 'video__length_seconds')\
+            .annotate(
+                total_count=Count('id'),
+                toxic_count=Count('id', filter=Q(is_toxic=True)),
+                ratio=ExpressionWrapper(
+                    Cast(F('toxic_count'), FloatField()) / Cast(F('total_count'), FloatField()) * 100,
+                    output_field=FloatField()
+                ),
+                engagement_density=ExpressionWrapper(
+                    Cast(F('total_count'), FloatField()) / (Cast(Case(When(video__length_seconds__gt=0, then=F('video__length_seconds')), default=1, output_field=IntegerField()), FloatField()) / 60.0),
+                    output_field=FloatField()
+                )
+            )\
+            .order_by('-ratio')[:10]
+
+        top_videos_by_volume = qs.values('video__id', 'video__title', 'video__streamer_display_name', 'video__created_at')\
+            .annotate(total_count=Count('id'))\
+            .order_by('-total_count')[:5]
+
+        from django.db.models.functions import ExtractHour
+        hourly_stats = qs.annotate(hour=ExtractHour('created_at'))\
+            .values('hour')\
+            .annotate(
+                count=Count('id'),
+                toxic_count=Count('id', filter=Q(is_toxic=True))
+            )\
+            .order_by('hour')
+
+        total_videos = qs.values('video__id').distinct().count()
+
+        return Response({
+            "top_commenters": list(top_commenters),
+            "most_toxic_absolute": list(most_toxic_absolute),
+            "most_toxic_relative": list(most_toxic_relative),
+            "toxicity_by_video": list(toxicity_by_video),
+            "top_videos_by_volume": list(top_videos_by_volume),
+            "hourly_stats": list(hourly_stats),
+            "total_videos": total_videos,
+        })
+
+    @action(detail=False, methods=['get'])
+    def stats_transcript(self, request):
+        """Slow stats: transcript word analysis and community shoutouts."""
+        streamer_id = request.query_params.get('streamer_id')
+
+        qs = Comment.objects.all()
+        if streamer_id:
+            qs = qs.filter(video__streamer_id=streamer_id)
+
+        transcript_qs = TranscriptEntry.objects.all()
+        if streamer_id:
+            transcript_qs = transcript_qs.filter(streamer_id=streamer_id)
+
+        transcripts = transcript_qs.only('text').order_by('-id')[:50000]
+
+        import re
+        from collections import Counter
+
+        all_words = []
+        STOP_WORDS = {
+            'a', 'the', 'and', 'or', 'to', 'of', 'in', 'is', 'it', 'for', 'with', 'on', 'as', 'at', 'this', 'that', 'from', 'but', 'not', 'by', 'an', 'be', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did', 'if', 'then', 'than', 'up', 'down', 'out', 'off', 'me', 'you', 'he', 'she', 'they', 'them', 'my', 'your', 'his', 'her', 'their', 'our', 'what', 'which', 'who', 'how', 'where', 'when', 'why',
+            'la', 'el', 'en', 'y', 'de', 'un', 'una', 'con', 'por', 'que', 'lo', 'los', 'las', 'del', 'mi', 'tu', 'su', 'nos', 'os', 'les', 'este', 'esta', 'esto', 'eso', 'para', 'porque', 'pero', 'como', 'si', 'no', 'ya', 'muy', 'mas', 'tan', 'muy', 'todo', 'nada', 'otro', 'cada', 'una', 'uno', 'donde', 'cual', 'esta', 'estos', 'estas', 'ser', 'estar', 'ha', 'has', 'he', 'han', 'hay',
+            'like', 'know', 'just', 'get', 'think', 'yeah', 'okay', 'right', 'well', 'really', 'now', 'time', 'good', 'see', 'can', 'don', 'actually', 'maybe', 'lot', 'little', 'bit', 'would', 'going', 'there', 'mean', 'one', 'here', 'man', 'got', 'something', 'everything', 'everyone', 'someone'
+        }
+
+        for t in transcripts:
+            if t.text:
+                t_words = re.findall(r'\b\w+\b', t.text.lower())
+                for w in t_words:
+                    if len(w) > 2 and w not in STOP_WORDS:
+                        all_words.append(w)
+
+        top_streamer_words = Counter(all_words).most_common(12)
+        top_streamer_words = [{"word": w, "count": c} for w, c in top_streamer_words][:10]
+
+        complex_words = [w for w in all_words if len(w) > 8]
+        top_complex_words = Counter(complex_words).most_common(10)
+        top_complex_words = [{"word": w, "count": c} for w, c in top_complex_words]
+
+        community_names = qs.values_list('commenter_display_name', flat=True).distinct()[:100]
+        community_names = [name for name in community_names if len(name) > 3]
+
+        mention_counts = Counter()
+        full_transcript_text = " ".join([t.text for t in transcripts if t.text]).lower()
+        for name in community_names:
+            count = len(re.findall(r'\b' + re.escape(name.lower()) + r'\b', full_transcript_text))
+            if count > 0:
+                mention_counts[name] = count
+
+        top_mentioned_users = [{"username": name, "count": count} for name, count in mention_counts.most_common(10)]
+
+        return Response({
+            "top_streamer_words": top_streamer_words,
+            "top_complex_words": top_complex_words,
+            "top_mentioned_users": top_mentioned_users,
+        })
+
+    @action(detail=False, methods=['get'])
     def stats(self, request):
         streamer_id = request.query_params.get('streamer_id')
         
