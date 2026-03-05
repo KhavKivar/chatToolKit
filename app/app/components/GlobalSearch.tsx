@@ -352,6 +352,8 @@ export function GlobalSearch() {
 
         while (hasMoreOnServer && page <= startPage + BATCH_SIZE - 1) {
           // 1. Fetch Comments
+          // .catch handles 404 from DRF when page is out of range
+          const emptyPage = { results: [], next: null };
           const commentPromise = !onlyTranscripts
             ? getComments({
                 page,
@@ -360,19 +362,19 @@ export function GlobalSearch() {
                 exclude_users: excludedUsers.join(","),
                 min_toxicity: toxicOnly ? toxicityThreshold : undefined,
                 video__streamer: activeFilter || undefined,
-              })
-            : Promise.resolve({ results: [], next: null });
+              }).catch(() => emptyPage)
+            : Promise.resolve(emptyPage);
 
           // 2. Fetch Transcripts (only if keywords are present and not in toxicOnly mode)
           const transcriptPromise =
             keywords.length > 0
               ? getTranscripts({
                   page,
-                  page_size: 500, // Matching comment page size
-                  search_or: keywords.join(","), // Using search_or for consistency
+                  page_size: 500,
+                  search_or: keywords.join(","),
                   streamer: activeFilter || undefined,
-                })
-              : Promise.resolve({ results: [] });
+                }).catch(() => emptyPage)
+              : Promise.resolve(emptyPage);
 
           const [commentData, transcriptData] = await Promise.all([
             commentPromise,
