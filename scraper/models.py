@@ -93,6 +93,14 @@ class Clip(models.Model):
         return f"Clip: {self.title} ({self.streamer.display_name})"
 
 
+class UserAlias(models.Model):
+    alias = models.CharField(max_length=255, unique=True)
+    canonical_name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return f"{self.alias} → {self.canonical_name}"
+
+
 class TranscriptEntry(models.Model):
     video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name="transcripts")
     streamer = models.ForeignKey(Streamer, on_delete=models.CASCADE, related_name="transcripts")
