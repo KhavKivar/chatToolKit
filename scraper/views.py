@@ -648,7 +648,7 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
             video_ids = list(
                 Video.objects
                 .filter(streamer_login__iexact=streamer_login)
-                .filter(transcriptentry__isnull=False)
+                .filter(transcripts__isnull=False)
                 .values_list('id', flat=True)
                 .distinct()
             )
@@ -660,7 +660,7 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
         else:
             video_ids = list(
                 Video.objects
-                .filter(transcriptentry__isnull=False)
+                .filter(transcripts__isnull=False)
                 .values_list('id', flat=True)
                 .distinct()
             )

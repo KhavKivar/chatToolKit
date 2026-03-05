@@ -20,7 +20,7 @@ class Command(BaseCommand):
             video_ids = list(
                 Video.objects
                 .filter(streamer_login__iexact=options['streamer_login'])
-                .filter(transcriptentry__isnull=False)
+                .filter(transcripts__isnull=False)
                 .values_list('id', flat=True)
                 .distinct()
             )
@@ -29,7 +29,7 @@ class Command(BaseCommand):
         else:  # --all
             video_ids = list(
                 Video.objects
-                .filter(transcriptentry__isnull=False)
+                .filter(transcripts__isnull=False)
                 .values_list('id', flat=True)
                 .distinct()
             )
