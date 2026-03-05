@@ -296,8 +296,13 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
         top_complex_words = Counter(complex_words).most_common(10)
         top_complex_words = [{"word": w, "count": c} for w, c in top_complex_words]
 
-        community_names = qs.values_list('commenter_display_name', flat=True).distinct()[:100]
-        community_names = [name for name in community_names if len(name) > 3]
+        community_names = (
+            qs.values('commenter_display_name')
+            .annotate(comment_count=Count('id'))
+            .order_by('-comment_count')
+            .values_list('commenter_display_name', flat=True)[:200]
+        )
+        community_names = [name for name in community_names if name and len(name) > 3]
 
         mention_counts = Counter()
         full_transcript_text = " ".join([t.text for t in transcripts if t.text]).lower()
@@ -419,9 +424,14 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
 
         # 9. Top Mentioned Users (Who does the streamer talk about?)
         # We look for names of active community members in the transcripts
-        community_names = qs.values_list('commenter_display_name', flat=True).distinct()[:100]
+        community_names = (
+            qs.values('commenter_display_name')
+            .annotate(comment_count=Count('id'))
+            .order_by('-comment_count')
+            .values_list('commenter_display_name', flat=True)[:200]
+        )
         # Filter out short names or common words to avoid false positives
-        community_names = [name for name in community_names if len(name) > 3]
+        community_names = [name for name in community_names if name and len(name) > 3]
         
         mention_counts = Counter()
         # Combine transcripts for faster searching
