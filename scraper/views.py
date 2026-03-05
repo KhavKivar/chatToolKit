@@ -11,7 +11,7 @@ from .serializers import (
     ScrapeTaskSerializer, ClassificationTaskSerializer, ClipSerializer,
     TranscriptEntrySerializer
 )
-from .services import TwitchScraperService
+from .services import TwitchScraperService, fix_transcript_usernames
 from datetime import datetime, timezone, timedelta
 from django.db.models import Count, Q, F, FloatField, ExpressionWrapper, Case, When, IntegerField, Exists, OuterRef
 from django.db.models.functions import Cast
@@ -604,6 +604,9 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
 
         TranscriptEntry.objects.bulk_create(new_entries)
 
+        # Post-process: fix misspelled usernames using chat commenter names
+        names_fixed = fix_transcript_usernames(video_id)
+
         action_taken = 'actualizado' if is_update else 'creado'
         http_status = status.HTTP_200_OK if is_update else status.HTTP_201_CREATED
         return Response(
@@ -611,6 +614,7 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
                 'message': f'Transcript {action_taken} para VOD {video_id}',
                 'video_id': video_id,
                 'entries_saved': len(new_entries),
+                'names_corrected': names_fixed,
                 'action': action_taken,
             },
             status=http_status
