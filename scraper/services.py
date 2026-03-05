@@ -476,9 +476,11 @@ def _fix_names_in_text(text: str, names: dict, aliases: dict = None) -> str:
             continue
 
         # Strip punctuation for matching, preserve it for output
-        stripped = token.strip('.,!?;:\'"()[]{}')
-        prefix = token[:len(token) - len(token.lstrip('.,!?;:\'"()[]{}'))]
-        suffix = token[len(token) - len(token.rstrip('.,!?;:\'"()[]{}')) :] if token.rstrip('.,!?;:\'"()[]{}') != token else ''
+        _punct = '.,!?;:\'"()[]{}'
+        stripped = token.strip(_punct)
+        prefix = token[:len(token) - len(token.lstrip(_punct))]
+        _rstripped = token.rstrip(_punct)
+        suffix = token[len(_rstripped):] if _rstripped != token else ''
 
         if len(stripped) < 3:
             result.append(token)
