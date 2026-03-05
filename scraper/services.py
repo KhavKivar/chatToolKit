@@ -386,11 +386,24 @@ def _levenshtein(a: str, b: str) -> int:
     return dp[n]
 
 
-def fix_transcript_usernames(video_id: str) -> int:
+def build_global_names_dict():
+    """Build the global commenter names dictionary (all distinct names in DB)."""
+    from .models import Comment
+    return {
+        n.lower(): n
+        for n in Comment.objects
+            .values_list('commenter_display_name', flat=True)
+            .distinct()
+        if n and len(n) >= 3
+    }
+
+
+def fix_transcript_usernames(video_id: str, names: dict = None) -> int:
     """
     Post-process transcript entries for a video by correcting misspelled
     usernames using all unique commenter display names across the entire DB.
 
+    Pass a pre-built names dict to avoid re-querying the DB on every call.
     Returns the number of transcript entries that were corrected.
     """
     from .models import TranscriptEntry, Comment, Video
@@ -400,15 +413,8 @@ def fix_transcript_usernames(video_id: str) -> int:
     except Video.DoesNotExist:
         return 0
 
-    # Use all distinct commenter names across the entire DB — broader coverage
-    # than per-video filtering, no arbitrary frequency threshold needed
-    names = {
-        n.lower(): n
-        for n in Comment.objects
-            .values_list('commenter_display_name', flat=True)
-            .distinct()
-        if n and len(n) >= 3
-    }
+    if names is None:
+        names = build_global_names_dict()
     if not names:
         return 0
 

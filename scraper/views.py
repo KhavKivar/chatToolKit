@@ -11,7 +11,7 @@ from .serializers import (
     ScrapeTaskSerializer, ClassificationTaskSerializer, ClipSerializer,
     TranscriptEntrySerializer
 )
-from .services import TwitchScraperService, fix_transcript_usernames
+from .services import TwitchScraperService, fix_transcript_usernames, build_global_names_dict
 from datetime import datetime, timezone, timedelta
 from django.db.models import Count, Q, F, FloatField, ExpressionWrapper, Case, When, IntegerField, Exists, OuterRef
 from django.db.models.functions import Cast
@@ -665,10 +665,11 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
                 .distinct()
             )
 
+        names = build_global_names_dict()
         results = {}
         total_corrected = 0
         for vid in video_ids:
-            corrected = fix_transcript_usernames(vid)
+            corrected = fix_transcript_usernames(vid, names=names)
             results[vid] = corrected
             total_corrected += corrected
 
