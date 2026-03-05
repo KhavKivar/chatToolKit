@@ -5,11 +5,11 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer, BrowsableAPIRenderer, BaseRenderer
-from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip, TranscriptEntry
+from .models import Video, Comment, Streamer, ScrapeTask, ClassificationTask, Clip, TranscriptEntry, UserAlias, ExcludedShoutout
 from .serializers import (
-    VideoSerializer, CommentSerializer, StreamerSerializer, 
+    VideoSerializer, CommentSerializer, StreamerSerializer,
     ScrapeTaskSerializer, ClassificationTaskSerializer, ClipSerializer,
-    TranscriptEntrySerializer
+    TranscriptEntrySerializer, UserAliasSerializer, ExcludedShoutoutSerializer
 )
 from .services import TwitchScraperService, fix_transcript_usernames, build_global_names_dict, build_aliases_dict
 from datetime import datetime, timezone, timedelta
@@ -296,7 +296,6 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
         top_complex_words = Counter(complex_words).most_common(10)
         top_complex_words = [{"word": w, "count": c} for w, c in top_complex_words]
 
-        from .models import UserAlias
         commenter_names = set(
             name for name in
             qs.values_list('commenter_display_name', flat=True).distinct()
@@ -307,6 +306,9 @@ class CommentViewSet(viewsets.ReadOnlyModelViewSet):
             if a.canonical_name and len(a.canonical_name) > 3
         )
         all_names_to_check = commenter_names | alias_canonical_names
+
+        excluded_lower = {e.lower() for e in ExcludedShoutout.objects.values_list('name', flat=True)}
+        all_names_to_check = {n for n in all_names_to_check if n.lower() not in excluded_lower}
 
         # Build word Counter from transcript for O(1) lookups (no regex per name)
         full_transcript_text = " ".join([t.text for t in transcripts if t.text]).lower()
@@ -768,6 +770,69 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
             status=http_status
         )
 
+    @action(detail=False, methods=['get'], url_path='unmatched_words')
+    def unmatched_words(self, request):
+        """
+        GET /api/transcripts/unmatched_words/?streamer_id=<id>&min_count=5&limit=50
+        Returns frequent words in transcripts that are not commenter names or aliases.
+        """
+        import re
+        from collections import Counter
+
+        streamer_id = request.query_params.get('streamer_id')
+        min_count = int(request.query_params.get('min_count', 5))
+        limit = int(request.query_params.get('limit', 50))
+
+        transcript_qs = TranscriptEntry.objects.all()
+        if streamer_id:
+            transcript_qs = transcript_qs.filter(streamer_id=streamer_id)
+        transcripts = transcript_qs.only('text').order_by('-id')[:15000]
+
+        # Build known names set (commenter names + alias aliases + alias canonical names)
+        comment_qs = Comment.objects.all()
+        if streamer_id:
+            comment_qs = comment_qs.filter(video__streamer_id=streamer_id)
+        known_names = set(
+            n.lower() for n in
+            comment_qs.values_list('commenter_display_name', flat=True).distinct()
+            if n
+        )
+        for ua in UserAlias.objects.all():
+            if ua.alias:
+                known_names.add(ua.alias.lower())
+            if ua.canonical_name:
+                known_names.add(ua.canonical_name.lower())
+
+        STOP_WORDS = {
+            'a', 'the', 'and', 'or', 'to', 'of', 'in', 'is', 'it', 'for', 'with', 'on', 'as', 'at', 'this', 'that',
+            'from', 'but', 'not', 'by', 'an', 'be', 'are', 'was', 'were', 'have', 'has', 'had', 'do', 'does', 'did',
+            'if', 'then', 'than', 'up', 'down', 'out', 'off', 'me', 'you', 'he', 'she', 'they', 'them', 'my', 'your',
+            'his', 'her', 'their', 'our', 'what', 'which', 'who', 'how', 'where', 'when', 'why', 'all', 'will', 'about',
+            'la', 'el', 'en', 'y', 'de', 'un', 'una', 'con', 'por', 'que', 'lo', 'los', 'las', 'del', 'mi', 'tu',
+            'su', 'nos', 'os', 'les', 'este', 'esta', 'esto', 'eso', 'para', 'porque', 'pero', 'como', 'si', 'no',
+            'ya', 'muy', 'mas', 'tan', 'todo', 'nada', 'otro', 'cada', 'donde', 'cual', 'estos', 'estas', 'ser',
+            'estar', 'ha', 'has', 'han', 'hay',
+            'like', 'know', 'just', 'get', 'think', 'yeah', 'okay', 'right', 'well', 'really', 'now', 'time', 'good',
+            'see', 'can', 'don', 'actually', 'maybe', 'lot', 'little', 'bit', 'would', 'going', 'there', 'mean', 'one',
+            'here', 'man', 'got', 'something', 'everything', 'everyone', 'someone', 'also', 'even', 'still', 'back',
+            'way', 'because', 'two', 'more', 'some', 'any', 'said', 'want', 'need', 'make', 'take', 'come', 'say',
+        }
+
+        word_counter: Counter = Counter()
+        for t in transcripts:
+            if t.text:
+                for w in re.findall(r'\b[a-z]{3,}\b', t.text.lower()):
+                    if w not in STOP_WORDS and w not in known_names:
+                        word_counter[w] += 1
+
+        results = [
+            {"word": w, "count": c}
+            for w, c in word_counter.most_common(limit * 3)
+            if c >= min_count
+        ][:limit]
+
+        return Response(results)
+
     @action(detail=False, methods=['post'], url_path='fix_names')
     def fix_names(self, request):
         """
@@ -826,3 +891,40 @@ class TranscriptEntryViewSet(viewsets.ModelViewSet):
             'total_corrected': total_corrected,
             'details': results,
         })
+
+
+class UserAliasViewSet(viewsets.ModelViewSet):
+    queryset = UserAlias.objects.all()
+    serializer_class = UserAliasSerializer
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']
+
+    @action(detail=False, methods=['post'], url_path='bulk_create')
+    def bulk_create(self, request):
+        """
+        POST /api/aliases/bulk_create/
+        Body: [{"alias": "week", "canonical_name": "kweeku"}, ...]
+        Creates or updates aliases, skipping duplicates.
+        """
+        items = request.data
+        if not isinstance(items, list):
+            return Response({'error': 'Expected a list'}, status=status.HTTP_400_BAD_REQUEST)
+
+        created_count = 0
+        for item in items:
+            alias = item.get('alias', '').strip()
+            canonical = item.get('canonical_name', '').strip()
+            if alias and canonical:
+                _, created = UserAlias.objects.update_or_create(
+                    alias=alias,
+                    defaults={'canonical_name': canonical},
+                )
+                if created:
+                    created_count += 1
+
+        return Response({'created': created_count}, status=status.HTTP_201_CREATED)
+
+
+class ExcludedShoutoutViewSet(viewsets.ModelViewSet):
+    queryset = ExcludedShoutout.objects.all()
+    serializer_class = ExcludedShoutoutSerializer
+    http_method_names = ['get', 'post', 'delete', 'head', 'options']

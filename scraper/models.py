@@ -101,6 +101,16 @@ class UserAlias(models.Model):
         return f"{self.alias} → {self.canonical_name}"
 
 
+class ExcludedShoutout(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+
+    class Meta:
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
 class TranscriptEntry(models.Model):
     video = models.ForeignKey(Video, on_delete=models.CASCADE, related_name="transcripts")
     streamer = models.ForeignKey(Streamer, on_delete=models.CASCADE, related_name="transcripts")

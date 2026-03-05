@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Video, Comment, UserAlias
+from .models import Video, Comment, UserAlias, ExcludedShoutout
 
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
@@ -16,3 +16,8 @@ class CommentAdmin(admin.ModelAdmin):
 class UserAliasAdmin(admin.ModelAdmin):
     list_display = ['alias', 'canonical_name']
     search_fields = ['alias', 'canonical_name']
+
+@admin.register(ExcludedShoutout)
+class ExcludedShoutoutAdmin(admin.ModelAdmin):
+    list_display = ['name']
+    search_fields = ['name']

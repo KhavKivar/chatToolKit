@@ -206,6 +206,53 @@ export const getTranscripts = async (params?: {
   return response.data;
 };
 
+export const getUnmatchedWords = async (
+  streamerId?: string,
+  minCount = 5,
+  limit = 50,
+): Promise<{ word: string; count: number }[]> => {
+  const response = await api.get("/transcripts/unmatched_words/", {
+    params: { streamer_id: streamerId, min_count: minCount, limit },
+  });
+  return response.data;
+};
+
+export const getAliases = async (): Promise<
+  { id: number; alias: string; canonical_name: string }[]
+> => {
+  const response = await api.get("/aliases/");
+  return response.data.results ?? response.data;
+};
+
+export const bulkCreateAliases = async (
+  aliases: { alias: string; canonical_name: string }[],
+): Promise<{ created: number }> => {
+  const response = await api.post("/aliases/bulk_create/", aliases);
+  return response.data;
+};
+
+export const deleteAlias = async (id: number): Promise<void> => {
+  await api.delete(`/aliases/${id}/`);
+};
+
+export const getExcludedShoutouts = async (): Promise<
+  { id: number; name: string }[]
+> => {
+  const response = await api.get("/excluded-shoutouts/");
+  return response.data.results ?? response.data;
+};
+
+export const createExcludedShoutout = async (
+  name: string,
+): Promise<{ id: number; name: string }> => {
+  const response = await api.post("/excluded-shoutouts/", { name });
+  return response.data;
+};
+
+export const deleteExcludedShoutout = async (id: number): Promise<void> => {
+  await api.delete(`/excluded-shoutouts/${id}/`);
+};
+
 export const getClip = async (id: string) => {
   const response = await api.get(`/clips/${id}/`);
   return response.data;
