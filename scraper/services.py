@@ -481,6 +481,8 @@ def fix_transcript_usernames(video_id: str, names: dict = None, aliases: dict = 
 
 _COMMON_WORDS = {
     # Common English words that could false-match gaming usernames
+    'fine', 'fined', 'finer', 'matter', 'matters', 'value', 'valued', 'values',
+    'itsnot', 'isnot', 'didnot', 'wasnot', 'cannot', 'dontnot',
     'blind', 'blend', 'blond', 'bland', 'align', 'alley', 'allow', 'allot',
     'about', 'above', 'again', 'after', 'along', 'among', 'apart', 'apply',
     'being', 'below', 'black', 'blank', 'block', 'blood', 'bloom', 'blown',
