@@ -409,9 +409,15 @@ def fix_transcript_usernames(video_id: str, names: dict = None, aliases: dict = 
     Post-process transcript entries for a video by correcting misspelled
     usernames using all unique commenter display names across the entire DB.
 
+    For each transcript segment, the top 10 chatters active in a ±60s window
+    around that segment are treated as "priority" names and matched with a
+    lower 65% similarity threshold. All other names require 80%.
+
     Pass a pre-built names dict to avoid re-querying the DB on every call.
     Returns the number of transcript entries that were corrected.
     """
+    import bisect
+    from collections import Counter
     from .models import TranscriptEntry, Comment, Video
 
     try:
@@ -431,13 +437,38 @@ def fix_transcript_usernames(video_id: str, names: dict = None, aliases: dict = 
         sn = video.streamer.display_name
         names[sn.lower()] = sn
 
-    transcripts = TranscriptEntry.objects.filter(video=video)
+    transcripts = list(TranscriptEntry.objects.filter(video=video))
+
+    # Pre-load all comments for this video sorted by offset for fast window lookup
+    raw_comments = list(
+        Comment.objects.filter(video=video)
+        .values_list('commenter_display_name', 'content_offset_seconds')
+        .order_by('content_offset_seconds')
+    )
+    comment_offsets = [c[1] for c in raw_comments]
+    comment_names_list = [c[0] for c in raw_comments]
+
+    ACTIVE_WINDOW_SECONDS = 60  # ±60s around transcript entry midpoint
+    TOP_ACTIVE = 10             # top N active chatters get the lower threshold
+
     updated = []
 
     for entry in transcripts:
+        # Find active chatters in the time window around this entry
+        mid = (entry.start_seconds + entry.end_seconds) / 2
+        lo = bisect.bisect_left(comment_offsets, mid - ACTIVE_WINDOW_SECONDS)
+        hi = bisect.bisect_right(comment_offsets, mid + ACTIVE_WINDOW_SECONDS)
+
+        chatter_counts = Counter(comment_names_list[lo:hi])
+        priority_names = {
+            n.lower(): n
+            for n, _ in chatter_counts.most_common(TOP_ACTIVE)
+            if n and len(n) >= 3
+        }
+
         # Always re-apply from raw_text so improvements stack cleanly
         source = entry.raw_text if entry.raw_text else entry.text
-        fixed = _fix_names_in_text(source, names, aliases=aliases)
+        fixed = _fix_names_in_text(source, names, aliases=aliases, priority_names=priority_names)
         if fixed != entry.text:
             entry.text = fixed
             updated.append(entry)
@@ -448,11 +479,13 @@ def fix_transcript_usernames(video_id: str, names: dict = None, aliases: dict = 
     return len(updated)
 
 
-def _fix_names_in_text(text: str, names: dict, aliases: dict = None) -> str:
+def _fix_names_in_text(text: str, names: dict, aliases: dict = None, priority_names: dict = None) -> str:
     """
     Replace words in text that are close matches to known usernames.
     names: {lowercase_name: original_case_name}
     aliases: {alias_lower: canonical_name} — checked first, exact match only
+    priority_names: {lowercase_name: original_name} — active chatters in the
+        current time window; matched at 65% similarity. All other names require 80%.
     """
     import re as _re
     try:
@@ -510,8 +543,10 @@ def _fix_names_in_text(text: str, names: dict, aliases: dict = None) -> str:
         for name_lower in candidates:
             dist = _levenshtein_fn(lower, name_lower)
             max_len = max(wlen, len(name_lower))
-            # Require ≥65% similarity AND max 2 edits
-            if dist <= 2 and dist < best_dist and (1 - dist / max_len) >= 0.65:
+            # Active chatters in this time window: 65% threshold
+            # All other names: 80% threshold (reduces false positives in large global dict)
+            threshold = 0.65 if (priority_names and name_lower in priority_names) else 0.80
+            if dist <= 2 and dist < best_dist and (1 - dist / max_len) >= threshold:
                 best_dist = dist
                 best_name = names[name_lower]
 
