@@ -192,6 +192,40 @@ function getSearchTerms(keyword: string): string[] {
   return [...ngrams];
 }
 
+// Returns all alias expansions for a single keyword (excluding the keyword itself)
+function getAliasExpansions(
+  keyword: string,
+  aliases: { alias: string; canonical_name: string }[],
+): string[] {
+  const result: string[] = [];
+  const canonicals = new Set<string>();
+  const kwLower = keyword.toLowerCase();
+
+  for (const a of aliases) {
+    if (a.alias.toLowerCase() === kwLower) {
+      canonicals.add(a.canonical_name.toLowerCase());
+      if (a.canonical_name.toLowerCase() !== kwLower) result.push(a.canonical_name);
+    }
+    if (a.canonical_name.toLowerCase() === kwLower) {
+      canonicals.add(kwLower);
+    }
+  }
+
+  for (const canonical of canonicals) {
+    for (const a of aliases) {
+      if (
+        a.canonical_name.toLowerCase() === canonical &&
+        a.alias.toLowerCase() !== kwLower &&
+        !result.map((r) => r.toLowerCase()).includes(a.alias.toLowerCase())
+      ) {
+        result.push(a.alias);
+      }
+    }
+  }
+
+  return result;
+}
+
 // Given a list of keywords + alias table, returns a Map<expandedTerm, originalKeyword>
 // so backend searches also cover alias expansions and we can attribute matches back.
 // Searching a canonical OR any alias expands to ALL aliases of that canonical.
@@ -801,22 +835,40 @@ export function GlobalSearch() {
           {/* ── Chips: keywords + excluded users ── */}
           {(keywords.length > 0 || excludedUsers.length > 0) && (
             <div className="flex flex-wrap gap-1.5 p-2 bg-muted/20 rounded-lg border border-border/40">
-              {keywords.map((kw) => (
-                <Badge
-                  key={kw}
-                  variant="secondary"
-                  className="gap-1 bg-primary/10 border-primary/20 text-xs"
-                >
-                  <Tag size={10} className="text-primary" />
-                  {kw}
-                  <button
-                    onClick={() => removeKeyword(kw)}
-                    className="ml-0.5 hover:text-destructive"
-                  >
-                    <X size={10} />
-                  </button>
-                </Badge>
-              ))}
+              {keywords.map((kw) => {
+                const expansions = getAliasExpansions(kw, aliases);
+                return (
+                  <div key={kw} className="flex items-center gap-1 flex-wrap">
+                    <Badge
+                      variant="secondary"
+                      className="gap-1 bg-primary/10 border-primary/20 text-xs"
+                    >
+                      <Tag size={10} className="text-primary" />
+                      {kw}
+                      <button
+                        onClick={() => removeKeyword(kw)}
+                        className="ml-0.5 hover:text-destructive"
+                      >
+                        <X size={10} />
+                      </button>
+                    </Badge>
+                    {expansions.length > 0 && (
+                      <>
+                        <span className="text-[10px] text-muted-foreground">→</span>
+                        {expansions.map((exp) => (
+                          <Badge
+                            key={exp}
+                            variant="outline"
+                            className="text-[10px] text-muted-foreground border-dashed px-1.5 py-0"
+                          >
+                            {exp}
+                          </Badge>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
               {excludedUsers.map((u) => (
                 <Badge
                   key={u}
