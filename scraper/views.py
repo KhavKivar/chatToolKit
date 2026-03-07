@@ -52,11 +52,13 @@ class VideoViewSet(viewsets.ModelViewSet):
         logins_param = request.query_params.get('streamers', 'leonblack,shigity')
         logins = [l.strip().lower() for l in logins_param.split(',') if l.strip()]
 
+        MAX_SECONDS = 8 * 3600  # 8 hours — Colab limit
         tx_exists = Exists(TranscriptEntry.objects.filter(video=OuterRef('pk')))
         qs = (
             Video.objects
             .filter(streamer_login__in=logins)
             .filter(~tx_exists)
+            .filter(Q(length_seconds__isnull=True) | Q(length_seconds__lte=MAX_SECONDS))
             .order_by('-created_at')
             .values('id', 'length_seconds', 'streamer_login', 'title')
         )
