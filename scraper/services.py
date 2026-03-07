@@ -479,6 +479,71 @@ def fix_transcript_usernames(video_id: str, names: dict = None, aliases: dict = 
     return len(updated)
 
 
+_COMMON_WORDS = {
+    # Common English words that could false-match gaming usernames
+    'blind', 'blend', 'blond', 'bland', 'align', 'alley', 'allow', 'allot',
+    'about', 'above', 'again', 'after', 'along', 'among', 'apart', 'apply',
+    'being', 'below', 'black', 'blank', 'block', 'blood', 'bloom', 'blown',
+    'board', 'brain', 'brand', 'brave', 'break', 'breed', 'bring', 'broad',
+    'broke', 'brown', 'build', 'built', 'burst', 'clean', 'clear', 'climb',
+    'close', 'cloud', 'coach', 'color', 'comes', 'count', 'cover', 'crash',
+    'crazy', 'cream', 'cross', 'crowd', 'cruel', 'crush', 'curve', 'cycle',
+    'daily', 'dance', 'death', 'delay', 'depth', 'dirty', 'doubt', 'draft',
+    'drain', 'drama', 'drawn', 'dream', 'dress', 'drink', 'drive', 'drove',
+    'earth', 'eight', 'elite', 'empty', 'enemy', 'enjoy', 'enter', 'equal',
+    'error', 'event', 'every', 'exact', 'exist', 'extra', 'faith', 'false',
+    'fancy', 'fault', 'field', 'fight', 'final', 'first', 'fixed', 'flesh',
+    'float', 'floor', 'force', 'forma', 'found', 'frame', 'frank', 'fresh',
+    'front', 'froze', 'fully', 'funny', 'given', 'glass', 'going', 'grace',
+    'grade', 'grand', 'grant', 'grass', 'grave', 'great', 'green', 'group',
+    'grows', 'guess', 'guide', 'hands', 'happy', 'harsh', 'heart', 'heavy',
+    'hence', 'hills', 'human', 'humor', 'image', 'index', 'inner', 'input',
+    'issue', 'items', 'joint', 'judge', 'juice', 'keeps', 'known', 'large',
+    'laser', 'later', 'laugh', 'layer', 'learn', 'least', 'leave', 'level',
+    'light', 'limit', 'lined', 'lists', 'liver', 'local', 'login', 'looks',
+    'loose', 'lower', 'lucky', 'lunch', 'lying', 'magic', 'major', 'maker',
+    'match', 'media', 'mercy', 'merge', 'might', 'minor', 'minus', 'mixed',
+    'model', 'money', 'moral', 'mount', 'mouse', 'mouth', 'moved', 'movie',
+    'music', 'named', 'needs', 'nerve', 'never', 'night', 'north', 'noted',
+    'novel', 'nurse', 'occur', 'offer', 'often', 'order', 'other', 'owned',
+    'owner', 'paint', 'panel', 'paper', 'parts', 'party', 'pause', 'peace',
+    'phone', 'photo', 'piece', 'pilot', 'pitch', 'place', 'plain', 'plane',
+    'plant', 'plate', 'plaza', 'plays', 'plead', 'point', 'polar', 'power',
+    'press', 'price', 'pride', 'prime', 'print', 'prior', 'prize', 'proof',
+    'proud', 'prove', 'proxy', 'pulse', 'punch', 'queen', 'query', 'queue',
+    'quick', 'quiet', 'quote', 'radio', 'raise', 'range', 'rapid', 'ratio',
+    'reach', 'ready', 'realm', 'refer', 'reign', 'relax', 'reply', 'rider',
+    'right', 'rigid', 'risky', 'rival', 'river', 'robot', 'rocky', 'roles',
+    'rough', 'round', 'route', 'royal', 'rules', 'rural', 'sadly', 'saint',
+    'scale', 'scene', 'score', 'sense', 'serve', 'setup', 'seven', 'share',
+    'sharp', 'shift', 'short', 'shout', 'shown', 'sides', 'sight', 'signs',
+    'silly', 'skill', 'sleep', 'slide', 'slope', 'small', 'smart', 'smell',
+    'smile', 'smoke', 'solid', 'solve', 'sorry', 'south', 'space', 'speak',
+    'speed', 'spend', 'split', 'sport', 'squad', 'stack', 'stage', 'stake',
+    'stand', 'start', 'state', 'stays', 'steal', 'steel', 'steps', 'still',
+    'stock', 'stone', 'stood', 'store', 'storm', 'story', 'stuck', 'study',
+    'style', 'sugar', 'super', 'sweep', 'sweet', 'swift', 'sword', 'table',
+    'taken', 'taste', 'teach', 'tears', 'tends', 'terms', 'thank', 'thick',
+    'thing', 'think', 'third', 'three', 'throw', 'tight', 'tired', 'title',
+    'today', 'topic', 'total', 'touch', 'tough', 'tower', 'toxic', 'track',
+    'trade', 'trail', 'train', 'treat', 'trend', 'trial', 'tribe', 'trick',
+    'tried', 'truck', 'truly', 'trust', 'truth', 'twice', 'twist', 'types',
+    'under', 'union', 'until', 'upper', 'upset', 'urban', 'usage', 'usual',
+    'valid', 'value', 'valve', 'video', 'viral', 'visit', 'vital', 'voice',
+    'voted', 'waste', 'watch', 'water', 'whole', 'whose', 'witch', 'woman',
+    'women', 'world', 'worry', 'worse', 'worst', 'worth', 'would', 'write',
+    'wrote', 'young', 'yours', 'youth', 'zones',
+    # Common Spanish words
+    'antes', 'bueno', 'buena', 'cosas', 'claro', 'creo', 'cuanto', 'decia',
+    'desde', 'donde', 'entre', 'fecha', 'forma', 'grupo', 'gusto', 'habia',
+    'hacer', 'hasta', 'igual', 'juego', 'junta', 'largo', 'llega', 'lugar',
+    'mejor', 'menos', 'mismo', 'mundo', 'nunca', 'parte', 'puede', 'quien',
+    'quiero', 'sabes', 'salir', 'salon', 'sigue', 'sobre', 'tanto', 'tarde',
+    'tener', 'tiene', 'tiempo', 'todos', 'vamos', 'verdad', 'viene', 'vista',
+    'volver', 'vuelta',
+}
+
+
 def _fix_names_in_text(text: str, names: dict, aliases: dict = None, priority_names: dict = None) -> str:
     """
     Replace words in text that are close matches to known usernames.
@@ -486,6 +551,7 @@ def _fix_names_in_text(text: str, names: dict, aliases: dict = None, priority_na
     aliases: {alias_lower: canonical_name} — checked first, exact match only
     priority_names: {lowercase_name: original_name} — active chatters in the
         current time window; matched at 65% similarity. All other names require 80%.
+    Words in _COMMON_WORDS are never fuzzy-replaced.
     """
     import re as _re
     try:
@@ -532,6 +598,11 @@ def _fix_names_in_text(text: str, names: dict, aliases: dict = None, priority_na
             continue
 
         # Fuzzy match — only check names within ±2 length (pre-bucketed)
+        # Skip if this word is a known common English/Spanish word
+        if lower in _COMMON_WORDS:
+            result.append(token)
+            continue
+
         best_name = None
         best_dist = float('inf')
         wlen = len(lower)
