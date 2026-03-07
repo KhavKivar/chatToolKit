@@ -194,6 +194,7 @@ function getSearchTerms(keyword: string): string[] {
 
 // Given a list of keywords + alias table, returns a Map<expandedTerm, originalKeyword>
 // so backend searches also cover alias expansions and we can attribute matches back.
+// Searching a canonical OR any alias expands to ALL aliases of that canonical.
 function buildExpansionMap(
   keywords: string[],
   aliases: { alias: string; canonical_name: string }[],
@@ -201,12 +202,25 @@ function buildExpansionMap(
   const map = new Map<string, string>();
   for (const kw of keywords) {
     map.set(kw.toLowerCase(), kw);
+
+    // Collect all canonical names this keyword resolves to
+    const canonicals = new Set<string>();
     for (const a of aliases) {
       if (a.alias.toLowerCase() === kw.toLowerCase()) {
+        canonicals.add(a.canonical_name.toLowerCase());
         map.set(a.canonical_name.toLowerCase(), kw);
       }
       if (a.canonical_name.toLowerCase() === kw.toLowerCase()) {
-        map.set(a.alias.toLowerCase(), kw);
+        canonicals.add(a.canonical_name.toLowerCase());
+      }
+    }
+
+    // Expand all aliases of every resolved canonical
+    for (const canonical of canonicals) {
+      for (const a of aliases) {
+        if (a.canonical_name.toLowerCase() === canonical) {
+          map.set(a.alias.toLowerCase(), kw);
+        }
       }
     }
   }
