@@ -249,6 +249,7 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
   const [chatLoading, setChatLoading] = useState(true);
   const [transcriptLoading, setTranscriptLoading] = useState(false);
   const [transcriptFetched, setTranscriptFetched] = useState(false);
+  const [activeTab, setActiveTab] = useState("chat");
   const [streamers, setStreamers] = useState<Streamer[]>([]);
 
   // Alias Manager state
@@ -314,6 +315,24 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
       .catch((err) => console.error("Failed to fetch chat stats:", err))
       .finally(() => setChatLoading(false));
   }, [streamerFilter]);
+
+  // Reset transcript when streamer changes
+  useEffect(() => {
+    setTranscriptFetched(false);
+    setTranscriptData(null);
+  }, [streamerFilter]);
+
+  // Auto-load transcript when on transcript tab and data is stale
+  useEffect(() => {
+    if (activeTab === "transcript" && !transcriptFetched && !transcriptLoading) {
+      setTranscriptLoading(true);
+      setTranscriptFetched(true);
+      getStatsTranscript(streamerFilter || undefined)
+        .then(setTranscriptData)
+        .catch((err) => console.error("Failed to fetch transcript stats:", err))
+        .finally(() => setTranscriptLoading(false));
+    }
+  }, [activeTab, transcriptFetched, streamerFilter, transcriptLoading]);
 
   const loadTranscriptStats = () => {
     if (transcriptFetched) return;
@@ -584,9 +603,9 @@ export function StatsView({ standalone = false }: { standalone?: boolean }) {
       </div>
 
       <Tabs
-        defaultValue="chat"
+        value={activeTab}
+        onValueChange={(val) => { setActiveTab(val); if (val === "transcript") loadTranscriptStats(); }}
         className="w-full"
-        onValueChange={(val) => { if (val === "transcript") loadTranscriptStats(); }}
       >
         <TabsList className="w-full h-12 mb-8 p-1 rounded-xl bg-muted/60 border border-border/50">
           <TabsTrigger
