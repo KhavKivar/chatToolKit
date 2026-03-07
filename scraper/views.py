@@ -41,6 +41,27 @@ class VideoViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(~tx_exists)
         return qs
 
+    @action(detail=False, methods=['get'], url_path='pending_transcripts')
+    def pending_transcripts(self, request):
+        """
+        GET /api/videos/pending_transcripts/?streamers=leonblack,shigity
+        Returns videos without transcripts for the given streamer logins.
+        Defaults to leonblack and shigity.
+        Response: [{"id": "...", "length_seconds": 3600, "streamer_login": "..."}, ...]
+        """
+        logins_param = request.query_params.get('streamers', 'leonblack,shigity')
+        logins = [l.strip().lower() for l in logins_param.split(',') if l.strip()]
+
+        tx_exists = Exists(TranscriptEntry.objects.filter(video=OuterRef('pk')))
+        qs = (
+            Video.objects
+            .filter(streamer_login__in=logins)
+            .filter(~tx_exists)
+            .order_by('-created_at')
+            .values('id', 'length_seconds', 'streamer_login', 'title')
+        )
+        return Response(list(qs))
+
     @action(detail=False, methods=['post'], url_path='scrape/(?P<video_id>[^/.]+)')
     def scrape(self, request, video_id=None):
         """Standard blocking scrape — kept for backwards compat."""
