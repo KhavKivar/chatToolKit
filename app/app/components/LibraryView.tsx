@@ -68,7 +68,11 @@ export function LibraryView() {
     }
   }
 
-  async function loadStreamerVideos(streamerId: string, login: string, clear = true) {
+  async function loadStreamerVideos(
+    streamerId: string,
+    login: string,
+    clear = true,
+  ) {
     if (clear) setStreamerVideos([]); // Only clear on initial load, not polls
     try {
       const data = await getVideos({ streamer_login: login, page_size: 500 });
@@ -101,6 +105,21 @@ export function LibraryView() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Handle initial filter from URL
+  useEffect(() => {
+    if (streamers.length > 0 && !selectedStreamer && !selectedVideo) {
+      const urlStreamerId = new URLSearchParams(window.location.search).get(
+        "streamer",
+      );
+      if (urlStreamerId) {
+        const found = streamers.find((s) => s.id === urlStreamerId);
+        if (found) {
+          setSelectedStreamer(found);
+        }
+      }
+    }
+  }, [streamers, selectedStreamer, selectedVideo]);
 
   if (loading) {
     return (
@@ -322,11 +341,12 @@ export function LibraryView() {
                         Transcript
                       </Badge>
                     )}
-                    {(!v.clip_count || v.clip_count === 0) && !v.has_transcript && (
-                      <Badge className="text-[10px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-500 border-border/50 border backdrop-blur-sm">
-                        DOWNLOADED
-                      </Badge>
-                    )}
+                    {(!v.clip_count || v.clip_count === 0) &&
+                      !v.has_transcript && (
+                        <Badge className="text-[10px] font-bold uppercase tracking-widest bg-emerald-500/20 text-emerald-500 border-border/50 border backdrop-blur-sm">
+                          DOWNLOADED
+                        </Badge>
+                      )}
                   </div>
 
                   {v.clip_count != null && v.clip_count > 0 && (
