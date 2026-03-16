@@ -91,8 +91,6 @@ query VideoCommentsByOffsetOrCursor($videoID: ID!, $contentOffsetSeconds: Int, $
 
 class TwitchScraperService:
     def __init__(self, oauth_token: Optional[str] = None):
-        self.supabase_url = os.getenv("SUPABASE_URL")
-        self.supabase_key = os.getenv("SUPABASE_KEY")
         self.oauth_header = self._normalize_oauth(oauth_token)
         self.device_id = uuid.uuid4().hex
         self.client_session_id = str(uuid.uuid4())
@@ -206,18 +204,7 @@ class TwitchScraperService:
                             cookies[parts[5]] = parts[6].strip()
         return cookies
 
-    def upload_to_supabase(self, table: str, data: List[Dict]):
-        if not data: return
-        url = f"{self.supabase_url}/rest/v1/{table}"
-        headers = {
-            "apikey": self.supabase_key,
-            "Authorization": f"Bearer {self.supabase_key}",
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates"
-        }
-        response = requests.post(url, headers=headers, json=data)
-        if response.status_code not in [200, 201]:
-            print(f"Error uploading to Supabase: {response.text}")
+
 
     def scrape_video(self, video_id: str, limit_pages: Optional[int] = None, on_progress=None):
         print(f"Scraping video {video_id}...")
@@ -255,8 +242,7 @@ class TwitchScraperService:
                     "created_at": data.get("createdAt"),
                     "thumbnail_url": data.get("previewThumbnailURL")
                 }
-                # Upload to Supabase API
-                self.upload_to_supabase("videos", [video_data])
+
                 
                 # Try to link to a known streamer
                 streamer_login = video_data["streamer_login"]
@@ -280,7 +266,6 @@ class TwitchScraperService:
             edges = comments_data.get("edges") or []
             if not edges: break
             
-            supabase_batch = []
             local_batch = []
             max_offset_seen = offset
             
@@ -306,8 +291,6 @@ class TwitchScraperService:
                     "message": message,
                     "created_at": node.get("createdAt")
                 }
-                supabase_batch.append(comment_data)
-                
                 local_batch.append(Comment(
                     id=cid,
                     video=video_obj,
@@ -318,8 +301,7 @@ class TwitchScraperService:
                     created_at=comment_data["created_at"]
                 ))
             
-            if supabase_batch:
-                self.upload_to_supabase("comments", supabase_batch)
+
                 
             if local_batch:
                 Comment.objects.bulk_create(local_batch, ignore_conflicts=True)

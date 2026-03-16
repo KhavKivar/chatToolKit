@@ -54,7 +54,7 @@ function SearchContent() {
               PRIVACY
             </a>
             <a href="#" className="hover:text-foreground">
-              SUPABASE
+              DOCUMENTATION
             </a>
             <a href="#" className="hover:text-foreground">
               RESOURCES

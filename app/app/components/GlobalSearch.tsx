@@ -204,7 +204,8 @@ function getAliasExpansions(
   for (const a of aliases) {
     if (a.alias.toLowerCase() === kwLower) {
       canonicals.add(a.canonical_name.toLowerCase());
-      if (a.canonical_name.toLowerCase() !== kwLower) result.push(a.canonical_name);
+      if (a.canonical_name.toLowerCase() !== kwLower)
+        result.push(a.canonical_name);
     }
     if (a.canonical_name.toLowerCase() === kwLower) {
       canonicals.add(kwLower);
@@ -285,7 +286,9 @@ export function GlobalSearch() {
 
   const searchParams = useSearchParams();
   const [streamers, setStreamers] = React.useState<Streamer[]>([]);
-  const [aliases, setAliases] = React.useState<{ alias: string; canonical_name: string }[]>([]);
+  const [aliases, setAliases] = React.useState<
+    { alias: string; canonical_name: string }[]
+  >([]);
 
   // Sentinel ref for infinite scroll
   const sentinelRef = React.useRef<HTMLDivElement>(null);
@@ -421,7 +424,8 @@ export function GlobalSearch() {
         let page = startPage;
         let hasMoreOnServer = true;
         // Scan enough pages to cover multiple VODs; infinite scroll loads even more
-        const BATCH_SIZE = isLoadMore ? 15 : 10;
+        // Reduce batch size and page size for faster initial results
+        const BATCH_SIZE = isLoadMore ? 10 : 5;
 
         // Expand keywords with aliases (e.g. "gds" → also search "guldasan")
         const expansionMap = buildExpansionMap(keywords, aliases);
@@ -434,7 +438,7 @@ export function GlobalSearch() {
           const commentPromise = !onlyTranscripts
             ? getComments({
                 page,
-                page_size: 500,
+                page_size: 200,
                 search_or: expandedTerms.flatMap(getSearchTerms).join(","),
                 exclude_users: excludedUsers.join(","),
                 min_toxicity: toxicOnly ? toxicityThreshold : undefined,
@@ -447,7 +451,7 @@ export function GlobalSearch() {
             keywords.length > 0
               ? getTranscripts({
                   page,
-                  page_size: 500,
+                  page_size: 200,
                   search_or: expandedTerms.join(","),
                   streamer: activeFilter || undefined,
                 }).catch(() => emptyPage)
@@ -477,7 +481,10 @@ export function GlobalSearch() {
               bestKw = "";
             for (const term of expandedTerms) {
               const msgMatch = bestWordMatch(term, c.message ?? "");
-              const nameMatch = bestWordMatch(term, c.commenter_display_name ?? "");
+              const nameMatch = bestWordMatch(
+                term,
+                c.commenter_display_name ?? "",
+              );
               const s = Math.max(msgMatch, nameMatch);
               if (s > best) {
                 best = s;
@@ -661,7 +668,9 @@ export function GlobalSearch() {
       getStreamers().then((res) => {
         setStreamers(res.results || res);
       });
-      getAliases().then(setAliases).catch(() => null);
+      getAliases()
+        .then(setAliases)
+        .catch(() => null);
     };
     init();
   }, [dispatch, searchParams]);
@@ -699,7 +708,14 @@ export function GlobalSearch() {
     if (groups.length > 0) return; // handled by IntersectionObserver below
     const timer = setTimeout(() => handleSearch(true), 300);
     return () => clearTimeout(timer);
-  }, [canScanMore, loading, isScanningMore, searched, groups.length, handleSearch]);
+  }, [
+    canScanMore,
+    loading,
+    isScanningMore,
+    searched,
+    groups.length,
+    handleSearch,
+  ]);
 
   // Infinite scroll: auto-load more when sentinel enters viewport
   // Only active when there are already results pushing sentinel below fold
@@ -719,7 +735,14 @@ export function GlobalSearch() {
     const sentinel = sentinelRef.current;
     if (sentinel) observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [canScanMore, loading, isScanningMore, searched, groups.length, handleSearch]);
+  }, [
+    canScanMore,
+    loading,
+    isScanningMore,
+    searched,
+    groups.length,
+    handleSearch,
+  ]);
 
   return (
     <div className="space-y-6">
@@ -854,7 +877,9 @@ export function GlobalSearch() {
                     </Badge>
                     {expansions.length > 0 && (
                       <>
-                        <span className="text-[10px] text-muted-foreground">→</span>
+                        <span className="text-[10px] text-muted-foreground">
+                          →
+                        </span>
                         {expansions.map((exp) => (
                           <Badge
                             key={exp}
@@ -1057,240 +1082,249 @@ export function GlobalSearch() {
           )}
 
           {/* No results — only shown once all pages are exhausted */}
-          {groups.length === 0 && searched && !loading && !isScanningMore && !canScanMore && (
-            <Card className="border-dashed">
-              <CardContent className="py-16 flex flex-col items-center gap-4 text-muted-foreground">
-                <div className="bg-muted/50 p-4 rounded-full">
-                  <MessageSquare size={32} className="opacity-30" />
-                </div>
-                <div className="text-center space-y-1">
-                  <p className="font-medium text-foreground/70">
-                    No matches found
-                  </p>
-                  <p className="text-sm">
-                    No messages matched with ≥{Math.round(THRESHOLD * 100)}%
-                    similarity. Try different keywords or remove the streamer
-                    filter.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          {groups.length === 0 &&
+            searched &&
+            !loading &&
+            !isScanningMore &&
+            !canScanMore && (
+              <Card className="border-dashed">
+                <CardContent className="py-16 flex flex-col items-center gap-4 text-muted-foreground">
+                  <div className="bg-muted/50 p-4 rounded-full">
+                    <MessageSquare size={32} className="opacity-30" />
+                  </div>
+                  <div className="text-center space-y-1">
+                    <p className="font-medium text-foreground/70">
+                      No matches found
+                    </p>
+                    <p className="text-sm">
+                      No messages matched with ≥{Math.round(THRESHOLD * 100)}%
+                      similarity. Try different keywords or remove the streamer
+                      filter.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
           {/* Results cards */}
           {groups.length > 0 && (
             <div className="space-y-4">
               {groups.map((group, groupIdx) => {
-                const matchCount = group.comments.length + group.transcripts.length;
+                const matchCount =
+                  group.comments.length + group.transcripts.length;
                 const isSmall = matchCount <= 10;
-                const isExpanded = isSmall || expandedGroups.has(group.video_id);
+                const isExpanded =
+                  isSmall || expandedGroups.has(group.video_id);
                 return (
-                <Card
-                  key={group.video_id}
-                  className="overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 border-border/60 hover:border-border transition-colors"
-                  style={{ animationDelay: `${groupIdx * 50}ms` }}
-                >
-                  {/* Video header — click to expand/collapse (only for >10 matches) */}
-                  <CardHeader
-                    className={`py-4 bg-linear-to-r from-muted/30 to-transparent transition-colors ${isSmall ? "" : "cursor-pointer select-none hover:bg-muted/30"}`}
-                    onClick={isSmall ? undefined : () => toggleGroup(group.video_id)}
+                  <Card
+                    key={group.video_id}
+                    className="overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300 border-border/60 hover:border-border transition-colors"
+                    style={{ animationDelay: `${groupIdx * 50}ms` }}
                   >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="bg-purple-600/10 p-2 rounded-lg shrink-0">
-                          <Twitch size={16} className="text-purple-500" />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-bold text-sm truncate">
-                            {group.video_title}
-                          </p>
-                          <p className="text-xs text-muted-foreground flex gap-2 items-center">
-                            <span>@{group.video_streamer}</span>
-                            {group.video_created_at && (
-                              <>
-                                <span>&bull;</span>
-                                <span>
-                                  {new Date(
-                                    group.video_created_at,
-                                  ).toLocaleDateString([], {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </span>
-                              </>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3 shrink-0">
-                        <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none shrink-0">
-                          {group.comments.length + group.transcripts.length}{" "}
-                          matches
-                        </Badge>
-                        <a
-                          href={`https://www.twitch.tv/videos/${group.video_id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="text-[11px] text-purple-500 hover:text-purple-400 flex items-center gap-1 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
-                        >
-                          VOD <ExternalLink size={10} />
-                        </a>
-                        {!isSmall && (
-                        <ChevronDown
-                          size={16}
-                          className={`text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
-                        />
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  {/* Results list — only rendered when expanded */}
-                  {isExpanded && (
-                  <CardContent className="pt-0 pb-4 px-4 overflow-hidden">
-                    <div className="space-y-4">
-                      {/* Comments Section */}
-                      {group.comments.length > 0 && (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-2 mb-1">
-                            <MessageSquare
-                              size={12}
-                              className="text-primary/50"
-                            />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
-                              Chat Mentions
-                            </span>
+                    {/* Video header — click to expand/collapse (only for >10 matches) */}
+                    <CardHeader
+                      className={`py-4 bg-linear-to-r from-muted/30 to-transparent transition-colors ${isSmall ? "" : "cursor-pointer select-none hover:bg-muted/30"}`}
+                      onClick={
+                        isSmall ? undefined : () => toggleGroup(group.video_id)
+                      }
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="bg-purple-600/10 p-2 rounded-lg shrink-0">
+                            <Twitch size={16} className="text-purple-500" />
                           </div>
-                          {group.comments.map(
-                            (c: ScoredComment, idx: number) => (
-                              <div key={c.id}>
-                                {idx > 0 && (
-                                  <Separator className="my-2 opacity-50" />
-                                )}
-                                <div className="flex items-start justify-between gap-2">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="font-bold text-sm text-primary">
-                                      {c.commenter_display_name}
-                                    </span>
-                                    <span className="text-[11px] font-mono text-muted-foreground">
-                                      {formatTime(c.content_offset_seconds)}
-                                    </span>
-                                    <Badge
-                                      variant="outline"
-                                      className="text-[10px] font-mono px-1.5"
-                                    >
-                                      {Math.round(c.score * 100)}%
-                                    </Badge>
-                                    <Badge
-                                      variant="secondary"
-                                      className="text-[10px]"
-                                    >
-                                      {c.matchedKeyword}
-                                    </Badge>
-                                    {c.toxicity_score !== undefined &&
-                                      c.toxicity_score >= 0.8 && (
-                                        <Badge
-                                          variant="destructive"
-                                          className="text-[10px]"
-                                        >
-                                          Toxic
-                                        </Badge>
-                                      )}
-                                  </div>
-                                  <div className="flex items-center gap-2 shrink-0">
-                                    <button
-                                      onClick={() => handleViewContext(c)}
-                                      className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 border border-blue-300 dark:border-blue-700 rounded px-2 py-0.5 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
-                                    >
-                                      <Eye size={11} /> Context
-                                    </button>
-                                    <a
-                                      href={twitchTimestampLink(
-                                        c.video_id,
-                                        c.content_offset_seconds,
-                                      )}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
-                                    >
-                                      <Twitch size={11} /> Watch{" "}
-                                      <ExternalLink size={10} />
-                                    </a>
-                                  </div>
-                                </div>
-                                <p className="text-sm text-foreground/90 mt-1.5 leading-relaxed">
-                                  {c.message}
-                                </p>
-                              </div>
-                            ),
+                          <div className="min-w-0">
+                            <p className="font-bold text-sm truncate">
+                              {group.video_title}
+                            </p>
+                            <p className="text-xs text-muted-foreground flex gap-2 items-center">
+                              <span>@{group.video_streamer}</span>
+                              {group.video_created_at && (
+                                <>
+                                  <span>&bull;</span>
+                                  <span>
+                                    {new Date(
+                                      group.video_created_at,
+                                    ).toLocaleDateString([], {
+                                      year: "numeric",
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </span>
+                                </>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none shrink-0">
+                            {group.comments.length + group.transcripts.length}{" "}
+                            matches
+                          </Badge>
+                          <a
+                            href={`https://www.twitch.tv/videos/${group.video_id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-[11px] text-purple-500 hover:text-purple-400 flex items-center gap-1 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
+                          >
+                            VOD <ExternalLink size={10} />
+                          </a>
+                          {!isSmall && (
+                            <ChevronDown
+                              size={16}
+                              className={`text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                            />
                           )}
                         </div>
-                      )}
+                      </div>
+                    </CardHeader>
 
-                      {/* Transcripts Section */}
-                      {group.transcripts && group.transcripts.length > 0 && (
-                        <div className="space-y-3 pt-2 border-t mt-4 border-dashed">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Sparkles
-                              size={12}
-                              className="text-purple-500/50"
-                            />
-                            <span className="text-[10px] font-black uppercase tracking-widest text-purple-500/50">
-                              Said by Streamer
-                            </span>
-                          </div>
-                          {group.transcripts.map((t: TranscriptMatch) => (
-                            <div
-                              key={t.id}
-                              className="bg-purple-500/5 dark:bg-purple-500/10 p-3 rounded-xl border border-purple-500/10"
-                            >
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge className="bg-purple-600 text-white border-none text-[9px] font-black h-4 px-1.5 uppercase tracking-tighter shadow-sm">
-                                    VOD TRANSCRIPT
-                                  </Badge>
-                                  <span className="text-[11px] font-mono text-purple-600/70 dark:text-purple-400/70 font-bold">
-                                    {formatTime(t.start_seconds)}
-                                  </span>
-                                  <Badge
-                                    variant="outline"
-                                    className="text-[10px] font-mono px-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400"
-                                  >
-                                    {Math.round(t.score * 100)}%
-                                  </Badge>
-                                  <Badge
-                                    variant="secondary"
-                                    className="text-[10px] bg-purple-500/20 text-purple-700 dark:text-purple-300 border-none"
-                                  >
-                                    {t.matchedKeyword}
-                                  </Badge>
-                                </div>
-                                <a
-                                  href={twitchTimestampLink(
-                                    t.video_id,
-                                    Math.floor(t.start_seconds),
-                                  )}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors shrink-0"
-                                >
-                                  <Twitch size={11} /> Watch{" "}
-                                  <ExternalLink size={10} />
-                                </a>
+                    {/* Results list — only rendered when expanded */}
+                    {isExpanded && (
+                      <CardContent className="pt-0 pb-4 px-4 overflow-hidden">
+                        <div className="space-y-4">
+                          {/* Comments Section */}
+                          {group.comments.length > 0 && (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <MessageSquare
+                                  size={12}
+                                  className="text-primary/50"
+                                />
+                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+                                  Chat Mentions
+                                </span>
                               </div>
-                              <p className="text-sm text-foreground/90 mt-2 font-medium italic leading-relaxed">
-                                &quot;{t.text}&quot;
-                              </p>
+                              {group.comments.map(
+                                (c: ScoredComment, idx: number) => (
+                                  <div key={c.id}>
+                                    {idx > 0 && (
+                                      <Separator className="my-2 opacity-50" />
+                                    )}
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="font-bold text-sm text-primary">
+                                          {c.commenter_display_name}
+                                        </span>
+                                        <span className="text-[11px] font-mono text-muted-foreground">
+                                          {formatTime(c.content_offset_seconds)}
+                                        </span>
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[10px] font-mono px-1.5"
+                                        >
+                                          {Math.round(c.score * 100)}%
+                                        </Badge>
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-[10px]"
+                                        >
+                                          {c.matchedKeyword}
+                                        </Badge>
+                                        {c.toxicity_score !== undefined &&
+                                          c.toxicity_score >= 0.8 && (
+                                            <Badge
+                                              variant="destructive"
+                                              className="text-[10px]"
+                                            >
+                                              Toxic
+                                            </Badge>
+                                          )}
+                                      </div>
+                                      <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                          onClick={() => handleViewContext(c)}
+                                          className="flex items-center gap-1.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 border border-blue-300 dark:border-blue-700 rounded px-2 py-0.5 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
+                                        >
+                                          <Eye size={11} /> Context
+                                        </button>
+                                        <a
+                                          href={twitchTimestampLink(
+                                            c.video_id,
+                                            c.content_offset_seconds,
+                                          )}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors"
+                                        >
+                                          <Twitch size={11} /> Watch{" "}
+                                          <ExternalLink size={10} />
+                                        </a>
+                                      </div>
+                                    </div>
+                                    <p className="text-sm text-foreground/90 mt-1.5 leading-relaxed">
+                                      {c.message}
+                                    </p>
+                                  </div>
+                                ),
+                              )}
                             </div>
-                          ))}
+                          )}
+
+                          {/* Transcripts Section */}
+                          {group.transcripts &&
+                            group.transcripts.length > 0 && (
+                              <div className="space-y-3 pt-2 border-t mt-4 border-dashed">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Sparkles
+                                    size={12}
+                                    className="text-purple-500/50"
+                                  />
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-purple-500/50">
+                                    Said by Streamer
+                                  </span>
+                                </div>
+                                {group.transcripts.map((t: TranscriptMatch) => (
+                                  <div
+                                    key={t.id}
+                                    className="bg-purple-500/5 dark:bg-purple-500/10 p-3 rounded-xl border border-purple-500/10"
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <Badge className="bg-purple-600 text-white border-none text-[9px] font-black h-4 px-1.5 uppercase tracking-tighter shadow-sm">
+                                          VOD TRANSCRIPT
+                                        </Badge>
+                                        <span className="text-[11px] font-mono text-purple-600/70 dark:text-purple-400/70 font-bold">
+                                          {formatTime(t.start_seconds)}
+                                        </span>
+                                        <Badge
+                                          variant="outline"
+                                          className="text-[10px] font-mono px-1.5 border-purple-500/30 text-purple-600 dark:text-purple-400"
+                                        >
+                                          {Math.round(t.score * 100)}%
+                                        </Badge>
+                                        <Badge
+                                          variant="secondary"
+                                          className="text-[10px] bg-purple-500/20 text-purple-700 dark:text-purple-300 border-none"
+                                        >
+                                          {t.matchedKeyword}
+                                        </Badge>
+                                      </div>
+                                      <a
+                                        href={twitchTimestampLink(
+                                          t.video_id,
+                                          Math.floor(t.start_seconds),
+                                        )}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:text-purple-500 border border-purple-300 dark:border-purple-700 rounded px-2 py-0.5 hover:bg-purple-50 dark:hover:bg-purple-950 transition-colors shrink-0"
+                                      >
+                                        <Twitch size={11} /> Watch{" "}
+                                        <ExternalLink size={10} />
+                                      </a>
+                                    </div>
+                                    <p className="text-sm text-foreground/90 mt-2 font-medium italic leading-relaxed">
+                                      &quot;{t.text}&quot;
+                                    </p>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                         </div>
-                      )}
-                    </div>
-                  </CardContent>
-                  )}
-                </Card>
+                      </CardContent>
+                    )}
+                  </Card>
                 );
               })}
             </div>
