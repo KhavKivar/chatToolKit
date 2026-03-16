@@ -35,7 +35,10 @@ function HomeContent() {
     <div className="min-h-screen bg-background">
       <nav className="border-b sticky top-0 bg-background/95 backdrop-blur z-50">
         <div className="max-w-7xl mx-auto px-4 md:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+          <Link
+            href="/"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
             <div className="bg-primary p-1.5 rounded-lg text-primary-foreground">
               <Twitch size={24} />
             </div>
@@ -128,7 +131,7 @@ function HomeContent() {
               PRIVACY
             </a>
             <a href="#" className="hover:text-foreground">
-              SUPABASE
+              DOCUMENTATION
             </a>
             <a href="#" className="hover:text-foreground">
               RESOURCES

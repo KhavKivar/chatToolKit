@@ -33,7 +33,7 @@ def get_video_ids(api, streamer_login=None):
 
 
 def fix_one(fix_url, video_id):
-    resp = requests.post(fix_url, json={"video_id": video_id}, timeout=60)
+    resp = requests.post(fix_url, json={"video_id": video_id}, timeout=120)
     resp.raise_for_status()
     return resp.json().get("total_corrected", 0)
 
