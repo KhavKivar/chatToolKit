@@ -424,10 +424,9 @@ export function GlobalSearch() {
         let page = startPage;
         let hasMoreOnServer = true;
         // Scan enough pages to cover multiple VODs; infinite scroll loads even more
-        // Reduce batch size and page size for faster initial results
-        const BATCH_SIZE = isLoadMore ? 10 : 5;
-
-        // Expand keywords with aliases (e.g. "gds" → also search "guldasan")
+        // Further reduce batch sizes for much faster responses
+        const BATCH_SIZE = isLoadMore ? 5 : 3;
+        const MATCH_LIMIT = 50; // Stop early if we find enough matches to show something fast
         const expansionMap = buildExpansionMap(keywords, aliases);
         const expandedTerms = [...expansionMap.keys()];
 
@@ -535,7 +534,11 @@ export function GlobalSearch() {
           dispatch(setLastScannedPage(page));
           dispatch(setCanScanMore(hasMoreOnServer));
 
-          if (!hasMoreOnServer) {
+          if (
+            !hasMoreOnServer ||
+            allCommentMatches.length + allTranscriptMatches.length >=
+              MATCH_LIMIT
+          ) {
             break;
           }
 
