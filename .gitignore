@@ -22,3 +22,9 @@ app/*.tsbuildinfo
 .vercel
 twitch_chrome_profile/
 downloaded_clips/
+sync_data.json
+*.ipynb
+streamladder/*.json
+streamladder/*.html
+streamladder/*.png
+streamladder/*.mp4
